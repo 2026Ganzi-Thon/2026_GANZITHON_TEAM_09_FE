@@ -1,0 +1,35 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# 환경 변수 (API 키 등은 커밋하지 않음, 예시 파일만)
+.env
+.env.*
+!.env.example
+
+# PWA 개발 빌드
+dev-dist
+
+# Claude Code 개인 설정
+.claude/settings.local.json

@@ -1,0 +1,90 @@
+.summary {
+  font-size: 13px;
+  color: var(--color-mute);
+  margin-top: -6px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 4px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  text-align: center;
+  height: 100%;
+}
+
+.card:active {
+  background: var(--color-paper);
+}
+
+.name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.sub {
+  font-size: 11px;
+  color: var(--color-mute);
+}
+
+/* ── 성장 과정 ── */
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 16px 20px;
+  border-radius: 22px;
+  background: var(--color-sky-soft);
+  text-align: center;
+}
+
+.heroName {
+  font-family: var(--font-display);
+  font-size: 20px;
+  line-height: 1.3;
+  color: var(--color-navy-deep);
+}
+
+.heroBar {
+  width: 100%;
+  max-width: 260px;
+}
+
+.heroMeta {
+  font-size: 12.5px;
+  color: var(--color-navy);
+}
+
+.cardTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.note {
+  font-size: 12px;
+  color: var(--color-mute);
+}
+
+.record {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--color-ink);
+}
+
+.record b {
+  color: var(--color-navy);
+}

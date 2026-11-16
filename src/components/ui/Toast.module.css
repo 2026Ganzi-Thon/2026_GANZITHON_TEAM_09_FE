@@ -1,0 +1,30 @@
+.region {
+  position: fixed;
+  left: 50%;
+  top: calc(var(--safe-top) + 14px);
+  transform: translateX(-50%);
+  width: calc(min(100%, var(--frame-max)) - 2 * var(--gutter));
+  z-index: 60;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+}
+
+.toast {
+  background: var(--color-ink);
+  color: var(--color-card);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 16px;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(20, 34, 81, 0.2);
+  animation: pop 0.2s ease both;
+  text-align: center;
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}

@@ -1,0 +1,262 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { errorMessage } from '../../api/errors'
+import {
+  useAdultConfirmation,
+  useCreateGroup,
+  useCreateInvite,
+  useGroups,
+  useJoinByInvite,
+  useJoinOnlineQueue,
+  useMe,
+} from '../../api/queries'
+import type { InviteResponse } from '../../api/types'
+import { Character } from '../../components/character/Character'
+import { Page, PageHeader } from '../../components/layout/Page'
+import { BottomSheet } from '../../components/ui/BottomSheet'
+import { Button } from '../../components/ui/Button'
+import { Checkbox, TextField } from '../../components/ui/Form'
+import { useToast } from '../../components/ui/Toast'
+import { updateDevice } from '../../device/store'
+import styles from './groups.module.css'
+
+type SheetState = null | 'create' | 'code' | 'adult' | 'searching'
+const MAX_GROUPS = 3
+
+/** S08 첫 그룹 고르기 / S28 그룹 추가 (Figma 3): 친구(초대 코드) / 온라인(자동 배정 익명) / 혼자 */
+export function GroupCreatePage({ onboarding }: { onboarding?: boolean }) {
+  const navigate = useNavigate()
+  const toast = useToast()
+  const me = useMe()
+  const groups = useGroups()
+  const createGroup = useCreateGroup()
+  const createInvite = useCreateInvite()
+  const joinByInvite = useJoinByInvite()
+  const joinOnline = useJoinOnlineQueue()
+  const confirmAdult = useAdultConfirmation()
+
+  const [sheet, setSheet] = useState<SheetState>(null)
+  const [groupName, setGroupName] = useState(`${me.data?.nickname || '우리'}의 그룹`)
+  const [code, setCode] = useState('')
+  const [adult, setAdult] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [created, setCreated] = useState<{ groupId: number; name: string; invite: InviteResponse } | null>(null)
+
+  const slots = (groups.data?.groups.length ?? 0) + (groups.data?.queue.waiting ? 1 : 0)
+  const full = slots >= MAX_GROUPS
+
+  const finish = (groupId: number | null, message: string) => {
+    toast(message)
+    if (onboarding) updateDevice({ onboarded: true, onboardingStep: undefined })
+    // 온보딩이 끝나면 홈으로 (오늘 기분 팝업이 이어서 뜬다)
+    navigate(onboarding || groupId === null ? '/groups' : `/groups/${groupId}`, { replace: true })
+  }
+
+  const openSheet = (s: SheetState) => {
+    setError(null)
+    setSheet(s)
+  }
+
+  const fail = (e: unknown) => setError(errorMessage(e))
+
+  const makeFriendGroup = async () => {
+    setError(null)
+    try {
+      const g = await createGroup.mutateAsync({ type: 'FRIEND', name: groupName.trim() })
+      const invite = await createInvite.mutateAsync(g.groupId)
+      updateDevice((d) => ({ invites: { ...d.invites, [g.groupId]: invite } }))
+      setCreated({ groupId: g.groupId, name: g.name, invite })
+    } catch (e) {
+      fail(e)
+    }
+  }
+
+  const enterOnline = async (justConfirmed = false) => {
+    setError(null)
+    // S11: 처음 한 번 '만 19세 이상이에요' 자기 확인
+    if (!justConfirmed && !me.data?.adultConfirmed) {
+      openSheet('adult')
+      return
+    }
+    setSheet('searching')
+    try {
+      const res = await joinOnline.mutateAsync()
+      setSheet(null)
+      if (res.status === 'MATCHED') finish(res.groupId, '온라인 그룹에 들어왔어요')
+      else finish(null, '함께할 사람을 찾고 있어요. 모이면 알려드릴게요')
+    } catch (e) {
+      setSheet(null)
+      fail(e)
+    }
+  }
+
+  return (
+    <Page withTabBar={!onboarding} gap={14}>
+      <PageHeader title="그룹 만들기·참여" back={onboarding ? '/onboarding/notifications' : '/groups'} />
+      <p className={styles.intro}>함께 미션하고 캐릭터를 키워요. 대화는 없고, 미션을 마치면 이모티콘만 남겨요.</p>
+      {full ? <p className={styles.error}>그룹은 {MAX_GROUPS}개까지 참여할 수 있어요. 다른 그룹을 나간 뒤 다시 시도해 주세요.</p> : null}
+      {error && !sheet ? (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      <section className={styles.option}>
+        <span className={styles.optionTitle}>친구와 함께</span>
+        <span className={styles.optionSub}>초대 코드로 2~6명</span>
+        <div className={styles.row}>
+          <Button size="md" variant="secondary" disabled={full} onClick={() => openSheet('create')}>
+            코드 만들기
+          </Button>
+          <Button size="md" variant="secondary" disabled={full} onClick={() => openSheet('code')}>
+            코드 입력
+          </Button>
+        </div>
+      </section>
+
+      <section className={styles.option}>
+        <span className={styles.optionTitle}>온라인 그룹 들어가기</span>
+        <span className={styles.optionSub}>익명 4~6명. 4명이 모이면 시작해요</span>
+        <ul className={styles.bullets}>
+          <li>· 이름 대신 랜덤 별칭 (예: 산책하는 수달)</li>
+          <li>· 대화 없이 이모티콘 핑만</li>
+          <li>· 만 19세 이상(자기 확인), 신고·차단·나가기</li>
+        </ul>
+        <Button size="md" disabled={full} onClick={() => enterOnline()}>
+          온라인 그룹 들어가기
+        </Button>
+      </section>
+
+      <button
+        type="button"
+        className={styles.option}
+        disabled={full || createGroup.isPending}
+        onClick={async () => {
+          setError(null)
+          try {
+            const g = await createGroup.mutateAsync({ type: 'SOLO' })
+            finish(g.groupId, '혼자 시작했어요')
+          } catch (e) {
+            fail(e)
+          }
+        }}
+      >
+        <span className={styles.optionTitle}>혼자 시작하기</span>
+        <span className={styles.optionSub}>1인 그룹. 그룹은 모두 3개까지 참여할 수 있어요</span>
+      </button>
+
+      {/* 친구 그룹 만들기 → 초대 코드 */}
+      <BottomSheet open={sheet === 'create'} onClose={() => setSheet(null)} label="친구 그룹 만들기">
+        {created ? (
+          <>
+            <h2 className={styles.sheetTitle}>초대 코드를 친구에게 보내 주세요</h2>
+            <div className={styles.codeBox}>
+              <span className={styles.code}>{`${created.invite.code.slice(0, 4)} ${created.invite.code.slice(4)}`}</span>
+              <span className={styles.codeMeta}>{new Date(created.invite.expiresAt).toLocaleDateString('ko-KR')}까지 쓸 수 있어요</span>
+            </div>
+            <Button
+              variant="secondary"
+              onClick={async () => {
+                const text = `행운핑에서 같이 미션해요! 초대 코드: ${created.invite.code}`
+                try {
+                  if (navigator.share) await navigator.share({ text })
+                  else {
+                    await navigator.clipboard.writeText(created.invite.code)
+                    toast('코드를 복사했어요')
+                  }
+                } catch {
+                  /* 공유를 취소함 */
+                }
+              }}
+            >
+              공유하기
+            </Button>
+            <Button onClick={() => finish(created.groupId, `'${created.name}'을 만들었어요`)}>그룹으로 가기</Button>
+          </>
+        ) : (
+          <>
+            <h2 className={styles.sheetTitle}>친구 그룹 만들기</h2>
+            <TextField label="그룹 이름" value={groupName} maxLength={12} onChange={(e) => setGroupName(e.target.value)} error={error} />
+            <Button loading={createGroup.isPending || createInvite.isPending} onClick={makeFriendGroup}>
+              초대 코드 만들기
+            </Button>
+          </>
+        )}
+      </BottomSheet>
+
+      {/* 코드 입력 */}
+      <BottomSheet open={sheet === 'code'} onClose={() => setSheet(null)} label="초대 코드 입력">
+        <h2 className={styles.sheetTitle}>코드 입력</h2>
+        <TextField
+          label="친구에게 받은 8자리 코드"
+          value={code}
+          maxLength={9}
+          autoCapitalize="characters"
+          autoComplete="off"
+          placeholder="K7MP 2QXR"
+          onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9 ]/g, ''))}
+          error={error}
+        />
+        <Button
+          disabled={code.replace(/\s/g, '').length !== 8}
+          loading={joinByInvite.isPending}
+          onClick={async () => {
+            setError(null)
+            try {
+              const g = await joinByInvite.mutateAsync(code.replace(/\s/g, ''))
+              finish(g.groupId, '그룹에 들어왔어요')
+            } catch (e) {
+              fail(e)
+            }
+          }}
+        >
+          참여하기
+        </Button>
+      </BottomSheet>
+
+      {/* S11 온라인 그룹 · 나이 확인 (자기 확인, ACC-09) */}
+      <BottomSheet open={sheet === 'adult'} onClose={() => setSheet(null)} label="온라인 그룹 들어가기">
+        <h2 className={styles.sheetTitle}>온라인 그룹 들어가기</h2>
+        <p className={styles.intro}>모르는 사람 4~6명과 익명으로 함께해요.</p>
+        <ul className={styles.bullets}>
+          <li>· 이름 대신 이 그룹에서만 쓰는 랜덤 별칭</li>
+          <li>· 대화 없이 미션 완료 이모티콘만</li>
+          <li>· 불편하면 신고·차단·나가기</li>
+          <li>· 같은 그룹에서 2명에게 신고받으면 그룹에서 나가게 돼요</li>
+        </ul>
+        <Checkbox label="만 19세 이상이에요" checked={adult} onChange={setAdult} />
+        <p className={styles.intro}>나이는 따로 확인하지 않고 답한 대로 믿어요.</p>
+        {error ? <p className={styles.error}>{error}</p> : null}
+        <Button
+          disabled={!adult}
+          loading={confirmAdult.isPending}
+          onClick={async () => {
+            try {
+              await confirmAdult.mutateAsync()
+              setSheet(null)
+              void enterOnline(true)
+            } catch (e) {
+              fail(e)
+            }
+          }}
+        >
+          들어가기
+        </Button>
+        <Button variant="ghost" onClick={() => setSheet(null)}>
+          취소
+        </Button>
+      </BottomSheet>
+
+      {/* 배정 대기 */}
+      <BottomSheet open={sheet === 'searching'} label="온라인 그룹 찾는 중" dismissible={false}>
+        <div className={styles.searching} aria-busy="true">
+          <span className={styles.pulse}>
+            <Character stage={2} size={96} />
+          </span>
+          <p>함께할 그룹을 찾고 있어요</p>
+          <span className={styles.intro}>대기 순서대로 4~6명씩 모여요</span>
+        </div>
+      </BottomSheet>
+    </Page>
+  )
+}

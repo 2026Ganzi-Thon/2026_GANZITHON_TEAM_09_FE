@@ -1,0 +1,76 @@
+/*
+ * 앱 화면: 너비만 정하고(393 기준, 최대 430) 높이는 지정하지 않는다.
+ * 세로 길이는 내용이 정하고, 길면 문서 전체가 자연스럽게 스크롤된다.
+ */
+.frame {
+  position: relative;
+  width: 100%;
+  max-width: var(--frame-max);
+  margin: 0 auto;
+  /* 가로 스크롤 방지 (clip은 스크롤 컨테이너를 만들지 않아 고정 요소·세로 스크롤에 영향 없음) */
+  overflow-x: clip;
+}
+
+/*
+ * 앱 기둥 배경: 화면에 고정된 장식이라 레이아웃 높이에 영향을 주지 않는다.
+ * 내용이 짧아도 앱 영역이 화면 아래까지 이어져 보인다.
+ */
+.frame::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: min(100%, var(--frame-max));
+  transform: translateX(-50%);
+  background: var(--frame-bg, var(--color-paper));
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* PC·태블릿: 바깥은 흰색, 앱 화면은 테두리와 그림자로 구분 */
+@media (min-width: 431px) {
+  .frame::before {
+    box-shadow:
+      0 0 0 1px var(--color-line),
+      0 12px 48px rgba(20, 34, 81, 0.1);
+  }
+}
+
+/* 휴대폰: 바깥이 보이지 않게 (당겨서 튕길 때도 앱 배경색) */
+@media (max-width: 430px) {
+  :global(body) {
+    background: var(--frame-bg, var(--color-paper));
+  }
+}
+
+.rotate {
+  display: none;
+}
+
+/* 휴대폰 가로 화면만 막는다 (PC 가로 창은 영향 없음) */
+@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  .rotate {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: var(--color-paper);
+    text-align: center;
+  }
+
+  .rotate p {
+    font-family: var(--font-display);
+    font-size: 20px;
+    color: var(--color-ink);
+  }
+
+  .rotate span {
+    font-size: 13px;
+    color: var(--color-mute);
+  }
+}

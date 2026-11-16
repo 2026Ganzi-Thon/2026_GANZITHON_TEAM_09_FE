@@ -1,0 +1,19 @@
+.track {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-sky-soft);
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.white {
+  background: var(--color-card);
+}
+
+.fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--color-navy);
+  transition: width 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+}

@@ -1,0 +1,55 @@
+.layer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 34, 81, 0.45);
+  animation: fade 0.2s ease both;
+}
+
+.sheet {
+  position: relative;
+  width: 100%;
+  max-width: var(--frame-max);
+  max-height: calc(100dvh - var(--safe-top) - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--color-card);
+  border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+  padding: 14px var(--gutter) calc(30px + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  outline: none;
+  animation: rise 0.28s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+.handle {
+  align-self: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-line);
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}

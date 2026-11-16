@@ -1,0 +1,42 @@
+.summary {
+  background: var(--color-sky-soft);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.summaryTitle {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 1.35;
+  color: var(--color-navy-deep);
+}
+
+.summaryDesc {
+  font-size: 13px;
+  color: var(--color-navy);
+}
+
+.crisisLink {
+  display: block;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.note {
+  font-size: 11.5px;
+  color: var(--color-mute);
+  text-align: center;
+  margin-top: 6px;
+}
+
+.bottom {
+  padding-top: 12px;
+}

@@ -1,0 +1,54 @@
+/* Figma 변수(color/*, mood/*)를 그대로 옮긴 디자인 토큰 */
+:root {
+  --color-ink: #142251;
+  --color-mute: #56648e;
+  --color-card: #ffffff;
+  --color-navy: #253a8c;
+  --color-navy-deep: #1a2a6c;
+  --color-line: #c9ddf1;
+  --color-paper: #f5f9fd;
+  --color-sky: #93ccef;
+  --color-sky-soft: #dceffb;
+  --color-on-navy-sub: #d6e6fa;
+  --color-danger: #c2416b;
+  /* 앱 화면 바깥 (PC·태블릿) */
+  --color-outside: #ffffff;
+
+  /*
+   * 감정 6색: 밝은 파스텔, 서로 다른 색 계열 (2026-11-16 사용자 피드백으로 Figma mood/* 변수에서 변경)
+   * 점(dot) / 칩 배경(tint) / 선택 테두리(edge)
+   */
+  --mood-great: #ffd54f;
+  --mood-great-tint: #fff7da;
+  --mood-great-edge: #f2b705;
+  --mood-calm: #7fd8a9;
+  --mood-calm-tint: #e6f8ee;
+  --mood-calm-edge: #3fb87a;
+  --mood-okay: #8ccdf7;
+  --mood-okay-tint: #e5f4fd;
+  --mood-okay-edge: #3fa6e8;
+  --mood-tired: #ffb48a;
+  --mood-tired-tint: #ffede3;
+  --mood-tired-edge: #f2905c;
+  --mood-down: #8fa3f2;
+  --mood-down-tint: #eaeefd;
+  --mood-down-edge: #5f78e0;
+  --mood-lonely: #c7a6f5;
+  --mood-lonely-tint: #f3ebfd;
+  --mood-lonely-edge: #9d74e6;
+
+  --font-display: 'Jua', 'IBM Plex Sans KR', sans-serif;
+  --font-body: 'IBM Plex Sans KR', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo',
+    'Malgun Gothic', sans-serif;
+
+  --radius-button: 14px;
+  --radius-card: 18px;
+  --radius-sheet: 28px;
+
+  --gutter: 20px;
+  --frame-max: 430px;
+  --tabbar-height: 68px;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}

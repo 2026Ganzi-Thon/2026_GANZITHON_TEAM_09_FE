@@ -1,0 +1,357 @@
+.addButton {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  background: var(--color-navy);
+  color: var(--color-card);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+}
+
+.inlineClose {
+  font-size: 12px;
+  color: var(--color-mute);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 4px 0;
+}
+
+.cardChevron {
+  flex-shrink: 0;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--color-mute);
+  min-width: 32px;
+  min-height: 40px;
+}
+
+.missionCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-card);
+  background: var(--color-sky-soft);
+}
+
+.missionText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-navy);
+}
+
+.missionTitle {
+  font-family: var(--font-display);
+  font-size: 20px;
+  line-height: 1.3;
+  color: var(--color-navy-deep);
+}
+
+.missionSub {
+  font-size: 12px;
+  color: var(--color-navy);
+}
+
+.missionCta {
+  flex-shrink: 0;
+  min-width: 56px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: var(--color-navy);
+  color: var(--color-card);
+  font-weight: 700;
+  font-size: 14px;
+  text-align: center;
+}
+
+.limit {
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--color-mute);
+}
+
+/* ── 그룹 만들기·참여 ── */
+.intro {
+  font-size: 13px;
+  color: var(--color-mute);
+}
+
+.option {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 17px;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  text-align: left;
+}
+
+button.option:active {
+  background: var(--color-paper);
+}
+
+.optionTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.optionSub {
+  font-size: 13px;
+  color: var(--color-mute);
+}
+
+.bullets {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--color-ink);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.error {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-danger);
+}
+
+.codeBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px;
+  border-radius: var(--radius-card);
+  background: var(--color-sky-soft);
+}
+
+.code {
+  font-family: var(--font-display);
+  font-size: 34px;
+  letter-spacing: 6px;
+  color: var(--color-navy-deep);
+}
+
+.codeMeta {
+  font-size: 12px;
+  color: var(--color-navy);
+}
+
+.searching {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 0 8px;
+  text-align: center;
+}
+
+.searching p {
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+
+.pulse {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* ── 그룹 상세 ── */
+.hero {
+  background: var(--color-sky);
+  padding: calc(var(--safe-top) + 12px) var(--gutter) 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.heroTop {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.heroTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+  color: var(--color-navy-deep);
+}
+
+.heroBack {
+  font-size: 22px;
+  font-weight: 500;
+  min-width: 28px;
+  min-height: 36px;
+  margin-left: -6px;
+  color: var(--color-navy-deep);
+}
+
+.heroName {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1.3;
+}
+
+.heroMeta {
+  font-size: 12px;
+  color: var(--color-navy);
+}
+
+.more {
+  min-width: 36px;
+  min-height: 36px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-navy-deep);
+  letter-spacing: 1px;
+}
+
+.charName {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-navy-deep);
+}
+
+.heroBar {
+  width: 100%;
+  max-width: 260px;
+}
+
+.heroCount {
+  font-size: 12px;
+  color: var(--color-navy-deep);
+  text-align: center;
+}
+
+.pingRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.pingRow > span:first-child {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-navy-deep);
+}
+
+.body {
+  position: relative;
+  margin-top: -6px;
+  border-radius: 24px 24px 0 0;
+  background: var(--color-paper);
+  padding: 18px var(--gutter) calc(var(--tabbar-height) + var(--safe-bottom) + 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.memberList {
+  display: flex;
+  flex-direction: column;
+}
+
+.memberRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 48px;
+  border-bottom: 1px solid var(--color-sky-soft);
+  font-size: 14px;
+}
+
+.memberActions {
+  display: flex;
+  gap: 4px;
+}
+
+.memberActions button {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-mute);
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--color-paper);
+}
+
+.sheetTitle {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 22px;
+}
+
+.danger {
+  color: var(--color-danger) !important;
+}
+
+/* ── 온라인 대기 카드 (S20 대기 상태) ── */
+.waitCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border-radius: var(--radius-card);
+  background: var(--color-sky-soft);
+}
+
+.waitTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-navy-deep);
+}
+
+.waitSub {
+  font-size: 12.5px;
+  color: var(--color-navy);
+  margin-bottom: 4px;
+}
+
+.heroCharacter {
+  display: block;
+  border-radius: 50%;
+  transition: transform 0.15s ease;
+}
+
+.heroCharacter:active {
+  transform: scale(0.96);
+}

@@ -1,0 +1,157 @@
+.cardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.cardHead h2 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.cardHead span {
+  font-size: 12px;
+  color: var(--color-mute);
+}
+
+.week {
+  display: flex;
+  justify-content: space-between;
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 기록이 없는 날은 빈칸으로 둔다 (빠진 날 표시 안 함) */
+.moodDot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+}
+
+.dayLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-mute);
+}
+
+.today {
+  color: var(--color-navy);
+  font-weight: 700;
+}
+
+.weekNav {
+  display: flex;
+  justify-content: space-between;
+}
+
+.weekNav button {
+  font-size: 12px;
+  color: var(--color-mute);
+  min-height: 28px;
+}
+
+.weekNav button:only-child {
+  margin-right: auto;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+  border-radius: var(--radius-card);
+  background: var(--color-sky-soft);
+}
+
+.stat strong {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 1.2;
+  color: var(--color-navy-deep);
+}
+
+.stat span {
+  font-size: 12px;
+  color: var(--color-navy);
+}
+
+.dex {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.dexItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border-radius: 14px;
+  background: var(--color-paper);
+}
+
+.dexItem span {
+  font-size: 11px;
+  color: var(--color-mute);
+  text-align: center;
+}
+
+.missions {
+  display: flex;
+  flex-direction: column;
+}
+
+.missions li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  border-bottom: 1px solid var(--color-sky-soft);
+}
+
+.missions li:last-child {
+  border-bottom: 0;
+}
+
+.thumb {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.missionName {
+  flex: 1;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.muted {
+  font-size: 12px;
+  color: var(--color-mute);
+}
+
+.more {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-navy);
+}
+
+a.dexItem:active {
+  background: var(--color-sky-soft);
+}
