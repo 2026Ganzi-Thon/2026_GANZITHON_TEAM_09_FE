@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import type { MissionMinutes, Place } from '../api/types'
+import { isPersistenceFrozen } from './persistence'
 
 /**
  * 서버에 두지 않는, 이 기기만의 화면 상태.
@@ -24,8 +25,21 @@ export interface DeviceState {
   blockedMemberIds: number[]
   /** 그룹별 마지막으로 만든 초대 코드 */
   invites: Record<number, { code: string; expiresAt: string }>
-  /** 미션 사진은 개인 기록용, 기기에만 (그룹에 공유하지 않음) */
+  /**
+   * S26 완성 연출 대기열: GET /groups의 justCompleted는 한 번만 오므로 받는 즉시 여기에 남기고,
+   * 사용자가 완성 화면을 보면 지운다.
+   */
+  pendingCompletions: Record<number, { groupName: string; kind: string; completedOn: string; memberCount: number }>
+  /**
+   * (예전 저장소) 미션 사진. 2026-11-17부터 추억 기록은 IndexedDB(device/memories.ts)에 둔다.
+   * 앱을 열 때 남아 있는 값을 옮기고 비운다 — 새로 쓰지 않는다.
+   */
   missionPhotos: Record<string, string>
+  /**
+   * 캐릭터 개인 별명 (나만 보는 화면에서만, 서버로 보내지 않음).
+   * 키는 `${groupId}:${characterId}` — characterId가 없으면 별명을 붙이지 않는다
+   */
+  characterNicknames: Record<string, string>
 }
 
 /** 계정(S04) 이후의 온보딩 단계: S05 선택 정보 → S06 동의 → S07 알림 → S08 첫 그룹 */
@@ -52,7 +66,9 @@ const empty = (): DeviceState => ({
   pingDays: [],
   blockedMemberIds: [],
   invites: {},
+  pendingCompletions: {},
   missionPhotos: {},
+  characterNicknames: {},
 })
 
 function load(): DeviceState {
@@ -74,6 +90,7 @@ export function getDevice(): DeviceState {
 export function updateDevice(patch: Partial<DeviceState> | ((s: DeviceState) => Partial<DeviceState>)) {
   const next = typeof patch === 'function' ? patch(state) : patch
   state = { ...state, ...next }
+  if (isPersistenceFrozen()) return
   try {
     localStorage.setItem(KEY, JSON.stringify(state))
   } catch {

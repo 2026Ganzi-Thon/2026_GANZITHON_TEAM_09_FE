@@ -58,6 +58,33 @@
   color: var(--color-navy-deep);
 }
 
+.nickname {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-card);
+  background: var(--color-navy);
+  border-radius: 12px;
+  padding: 2px 12px;
+}
+
+.editButton {
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-navy);
+}
+
+.sheetTitle {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 22px;
+}
+
 .heroBar {
   width: 100%;
   max-width: 260px;
@@ -87,4 +114,16 @@
 
 .record b {
   color: var(--color-navy);
+}
+
+/* S27 그룹 도감: 두 칸 */
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.cardGrowing {
+  background: var(--color-sky-soft);
+  border-color: var(--color-sky-soft);
 }

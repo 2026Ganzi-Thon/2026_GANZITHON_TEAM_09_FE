@@ -1,5 +1,13 @@
+import { useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
+import { useGroup } from '../../api/queries'
 import { Character } from '../../components/character/Character'
+import { BottomSheet } from '../../components/ui/BottomSheet'
+import { Button } from '../../components/ui/Button'
+import { TextField } from '../../components/ui/Form'
+import { useToast } from '../../components/ui/Toast'
+import { useDevice } from '../../device/store'
+import { CHARACTER_NICKNAME_MAX, characterNicknameOf, setCharacterNickname } from '../../features/character/nickname'
 import { StageGallery } from '../../components/character/StageGallery'
 import { StageBar } from '../../components/character/StageProgress'
 import { Card, Page, PageHeader } from '../../components/layout/Page'
@@ -23,11 +31,16 @@ const FULL_DAYS = 50
 export function CharacterDetailPage() {
   const { groupId, characterId } = useParams()
   const chars = useAllCharacters()
+  const gid = Number(groupId)
+  // 목록 응답에 캐릭터 ID가 없을 때(실서버) 별명 키를 위해 그룹 상세에서 받는다
+  const groupDetail = useGroup(Number.isFinite(gid) ? gid : 0)
+  const device = useDevice()
+  const toast = useToast()
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('')
 
   if (chars.isPending) return <Loading />
   if (chars.isError) return <LoadError error={chars.error} onRetry={() => chars.refetch()} />
-
-  const gid = Number(groupId)
   const growing = chars.growing.find(
     (c) => c.group.groupId === gid && (characterId === 'current' || String(c.characterId) === characterId),
   )
@@ -37,12 +50,37 @@ export function CharacterDetailPage() {
   const group = (growing ?? done)!.group
   const kind = (growing ?? done)!.kind
   const variant = variantOf(kind)
+  const charId = done?.characterId ?? growing?.characterId ?? groupDetail.data?.character.characterId
+  const nickname = characterNicknameOf(device, group.groupId, charId)
+
+  const openEdit = () => {
+    setDraft(nickname ?? '')
+    setEditing(true)
+  }
+  const saveNickname = (value: string) => {
+    if (charId === undefined) return
+    setCharacterNickname(group.groupId, charId, value)
+    setEditing(false)
+    toast(value.trim() ? '별명을 붙였어요. 나만 볼 수 있어요' : '별명을 지웠어요')
+  }
 
   return (
     <Page withTabBar gap={14}>
-      <PageHeader title={`${group.name} 캐릭터`} back backFallback="/collection" />
+      <PageHeader
+        title={`${group.name} 캐릭터`}
+        back
+        backFallback="/collection"
+        action={
+          charId !== undefined ? (
+            <button type="button" className={styles.editButton} onClick={openEdit} aria-label="나만 보는 별명 편집">
+              별명
+            </button>
+          ) : null
+        }
+      />
 
       <section className={styles.hero}>
+        {nickname ? <p className={styles.nickname}>{nickname}</p> : null}
         {growing ? (
           <>
             <Character stage={displayStage(growing)} variant={variant} size={130} mood="happy" title={`${group.name}의 ${stageNameOf(growing)}`} />
@@ -91,6 +129,25 @@ export function CharacterDetailPage() {
       <ButtonLink to={`/groups/${group.groupId}`} variant="secondary">
         그룹으로 가기
       </ButtonLink>
+
+      <BottomSheet open={editing} onClose={() => setEditing(false)} label="나만 보는 별명">
+        <h2 className={styles.sheetTitle}>나만 보는 별명</h2>
+        <p className={styles.note}>이 기기에서 나에게만 보여요. 그룹과 다른 구성원에게는 보이지 않아요.</p>
+        <TextField
+          label="별명"
+          value={draft}
+          maxLength={CHARACTER_NICKNAME_MAX}
+          placeholder="예: 클로버"
+          suffix={`${draft.length} / ${CHARACTER_NICKNAME_MAX}`}
+          onChange={(e) => setDraft(e.target.value.slice(0, CHARACTER_NICKNAME_MAX))}
+        />
+        <Button disabled={!draft.trim() && !nickname} onClick={() => saveNickname(draft)}>
+          {draft.trim() ? '저장하기' : '별명 지우기'}
+        </Button>
+        <Button variant="ghost" onClick={() => setEditing(false)}>
+          취소
+        </Button>
+      </BottomSheet>
     </Page>
   )
 }

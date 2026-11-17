@@ -1,0 +1,66 @@
+.page {
+  align-items: stretch;
+  text-align: center;
+  padding-top: calc(var(--safe-top) + 32px);
+}
+
+.meta {
+  font-size: 13px;
+  color: var(--color-mute);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.25;
+  color: var(--color-ink);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 16px;
+  border-radius: 22px;
+  background: var(--color-sky-soft);
+}
+
+.name {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--color-navy-deep);
+}
+
+.sub {
+  font-size: 13px;
+  color: var(--color-navy);
+}
+
+.note {
+  font-size: 13px;
+  color: var(--color-mute);
+}
+
+.next {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  text-align: left;
+}
+
+.nextTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.nextSub {
+  font-size: 12.5px;
+  color: var(--color-mute);
+}

@@ -49,3 +49,23 @@ export function formatMonthDay(day: DayKey) {
 }
 
 export const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토']
+
+const WEEK_ORDINALS = ['첫째', '둘째', '셋째', '넷째', '다섯째']
+
+/** '11.2' (0 없이) */
+export function formatShortMonthDay(day: DayKey) {
+  const [, m, d] = day.split('-').map(Number)
+  return `${m}.${d}`
+}
+
+/**
+ * 월요일 시작 주의 이름. 그 주의 목요일이 속한 달을 기준으로 몇째 주인지 센다.
+ * 예: 2026-11-02(월) 주 → '11월 첫째 주 (11.2 ~ 11.8)', 이번 주 → '이번 주 (11.16 ~ 11.22)'
+ */
+export function weekLabel(weekStart: DayKey, thisWeekStart?: DayKey) {
+  const range = `(${formatShortMonthDay(weekStart)} ~ ${formatShortMonthDay(addDays(weekStart, 6))})`
+  if (weekStart === thisWeekStart) return `이번 주 ${range}`
+  const thursday = addDays(weekStart, 3)
+  const [, m, d] = thursday.split('-').map(Number)
+  return `${m}월 ${WEEK_ORDINALS[Math.ceil(d / 7) - 1]} 주 ${range}`
+}

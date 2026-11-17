@@ -1,5 +1,5 @@
 /*
- * 앱 화면: 너비만 정하고(393 기준, 최대 430) 높이는 지정하지 않는다.
+ * 앱 화면: 너비만 정하고(393 기준, 최대 440) 높이는 지정하지 않는다.
  * 세로 길이는 내용이 정하고, 길면 문서 전체가 자연스럽게 스크롤된다.
  */
 .frame {
@@ -28,8 +28,8 @@
   pointer-events: none;
 }
 
-/* PC·태블릿: 바깥은 흰색, 앱 화면은 테두리와 그림자로 구분 */
-@media (min-width: 431px) {
+/* PC·태블릿: 바깥은 흰색, 앱 화면은 테두리와 그림자로 구분 (Pro Max 440까지는 휴대폰으로 본다) */
+@media (min-width: 441px) {
   .frame::before {
     box-shadow:
       0 0 0 1px var(--color-line),
@@ -38,7 +38,7 @@
 }
 
 /* 휴대폰: 바깥이 보이지 않게 (당겨서 튕길 때도 앱 배경색) */
-@media (max-width: 430px) {
+@media (max-width: 440px) {
   :global(body) {
     background: var(--frame-bg, var(--color-paper));
   }

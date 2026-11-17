@@ -47,6 +47,18 @@ export const MISSION_TOPICS: TopicSeed[] = [
 export const topicSeedById = (id: number) => MISSION_TOPICS.find((x) => x.topicId === id) ?? MISSION_TOPICS[0]
 
 /** 크기 단위: 시간형은 '분', 횟수형은 주제에 맞는 단위 */
+/**
+ * 내 기록(GET /me/records)처럼 주제 번호 없이 분류만 있을 때의 크기 단위.
+ * 횟수형 주제는 분류마다 단위가 하나라 분류로 정확히 정해진다 (계단 → 세트, 노래 → 곡, 좋았던 일 → 개, 그 외 → 번)
+ */
+export function recordSizeUnit(r: { sizeType: MissionTopic['sizeType']; category: string }): string {
+  if (r.sizeType === 'TIME') return '분'
+  if (r.category === 'ACTIVITY') return '세트'
+  if (r.category === 'PLEASURE') return '곡'
+  if (r.category === 'GOOD_THING') return '개'
+  return '번'
+}
+
 export function sizeUnit(topic: Pick<MissionTopic, 'sizeType' | 'category' | 'topicId'>): string {
   if (topic.sizeType === 'TIME') return '분'
   if (topic.topicId === 16) return '곡'

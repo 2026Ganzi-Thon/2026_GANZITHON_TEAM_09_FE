@@ -1,59 +1,122 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { API_MODE, api } from '../../api'
+import { API_MODE } from '../../api'
 import { errorMessage } from '../../api/errors'
-import { seedMockDemo, DEMO_INVITE_CODES } from '../../api/mock/server'
+import { DEMO_INVITE_CODES, getMockQueueMode, seedMockDemo, setMockQueueMode } from '../../api/mock/server'
 import { useDemoClock, useMe } from '../../api/queries'
 import { Character } from '../../components/character/Character'
 import { Card, Page, PageHeader } from '../../components/layout/Page'
 import { BottomSheet } from '../../components/ui/BottomSheet'
 import { Button } from '../../components/ui/Button'
+import { ACCOUNTS_SUPPORTED, endDemoAccount, startDemoAccount, useAccounts } from '../../device/accounts'
 import { useToast } from '../../components/ui/Toast'
-import { clearDeviceProfile, setDeviceProfile, useDeviceProfile } from '../../device/profile'
-import { resetDevice, updateDevice } from '../../device/store'
-import { addDays, kstHourMinute, weekdayOf, WEEKDAY_LABELS } from '../../features/date'
-import { JOB_LABELS } from '../../features/profile/jobs'
+import { setDeviceProfile } from '../../device/profile'
+import { clearMemories } from '../../device/memories'
+import { resetDevice, updateDevice, useDevice } from '../../device/store'
+import { characterNicknameOf } from '../../features/character/nickname'
+import { addDays, dayKeyOf, kstHourMinute, weekdayOf, WEEKDAY_LABELS } from '../../features/date'
 import { useNow } from '../../hooks/useNow'
 import { useAllCharacters } from '../../features/character/useCharacters'
 import { displayStage, progressLabel, stageNameOf, variantOf } from '../../features/selectors'
 import styles from './my.module.css'
 
-const MENU = [
-  { to: '/collection', label: '캐릭터 도감' },
-  { to: '/my/profile', label: '내 정보' },
-  { to: '/my/notifications', label: '알림' },
-  { to: '/my/privacy', label: '개인정보 · 기록 삭제' },
-  { to: '/my/notice', label: '서비스 안내 · 고지' },
-]
 
 /** KST 날짜 + 시:분 → ISO(UTC) */
 const kstIso = (day: string, hour: number, minute: number) =>
   new Date(Date.parse(`${day}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00+09:00`)).toISOString()
 
-/** S50 마이 */
+/** S50 마이 (Figma 21): 대표 캐릭터, 값이 보이는 목록, 알아 두세요. 시연 도구는 맨 아래 접힌 영역 */
 export function MyPage() {
   const me = useMe()
   const now = useNow()
   const navigate = useNavigate()
   const toast = useToast()
   const qc = useQueryClient()
-  const profile = useDeviceProfile()
+  const device = useDevice()
   const clock = useDemoClock()
   const rep = useAllCharacters().representative
-  const [confirmDelete, setConfirmDelete] = useState(false)
-  const [deleting, setDeleting] = useState(false)
-  const day = me.data?.today ?? ''
-  const summary = [profile.sigungu ?? profile.sido, profile.job ? JOB_LABELS[profile.job] : null].filter(Boolean).join(' · ')
+  const [queueMode, setQueueMode] = useState(getMockQueueMode())
+  const isDemo = !!me.data?.isDemo
+  const accounts = useAccounts()
+  const activeEntry = accounts.accounts.find((a) => a.id === accounts.activeId)
+  const returnEntry = accounts.accounts.find((a) => a.id === activeEntry?.demoReturnId)
+  const [confirmEnd, setConfirmEnd] = useState(false)
+  const [demoBusy, setDemoBusy] = useState(false)
 
-  const setClock = (now: string | null, message: string) =>
-    clock.mutate(now, { onSuccess: () => toast(message), onError: (e) => toast(errorMessage(e)) })
+  /**
+   * 시연 데이터 불러오기 = '시연 계정'으로 바꾸기 (계정 관리와 같은 방식).
+   * 지금 계정은 보관(확인까지)되고 지워지지 않는다. 이미 시연 계정이면 그 자리에서 처음부터 다시 넣는다.
+   */
+  const loadDemo = async () => {
+    setDemoBusy(true)
+    if (isDemo) {
+      seedMockDemo()
+      setDeviceProfile({ birthDate: '2000-05-14', sido: '서울특별시', sigungu: '마포구', job: 'STUDENT' })
+      resetDevice()
+      await clearMemories()
+      updateDevice({ onboarded: true })
+      await qc.resetQueries()
+      setDemoBusy(false)
+      toast('시연 데이터를 처음부터 다시 불러왔어요')
+      navigate('/groups')
+      return
+    }
+    try {
+      await startDemoAccount()
+      qc.clear()
+      window.location.replace('/groups')
+    } catch {
+      window.location.reload()
+    }
+  }
+
+  /** 시연 종료: 시연 계정을 지우고 시연 전 계정으로 돌아간다 (없으면 시작 화면) */
+  const finishDemo = async () => {
+    setDemoBusy(true)
+    try {
+      const result = await endDemoAccount()
+      qc.clear()
+      window.location.replace(result === 'restored' ? '/' : '/welcome')
+    } catch {
+      window.location.reload()
+    }
+  }
+  const day = me.data?.today ?? ''
+  // 시연 도구: 실서버는 시연 계정(GET /me isDemo)에만, 목업은 로컬 개발·시연용이라 항상
+  const showDemoTools = API_MODE === 'mock' || !!me.data?.isDemo
+  const startedOn = me.data ? dayKeyOf(Date.parse(me.data.createdAt)).replace(/-/g, '.') : ''
+  const repNickname = rep ? characterNicknameOf(device, rep.group.groupId, rep.characterId) : undefined
+  // 메뉴 제목만 (설명 없이) — 자세한 내용은 각 화면에서
+  const menu = [
+    { to: '/my/profile', label: '내 정보' },
+    // 한 기기의 여러 익명 계정 (목업 모드만 — 실서버는 계정 전환 API가 생긴 뒤)
+    ...(ACCOUNTS_SUPPORTED ? [{ to: '/accounts', label: '계정 관리' }] : []),
+    { to: '/my/memories', label: '추억 기록' },
+    { to: '/collection', label: '캐릭터 도감' },
+    { to: '/my/notifications', label: '알림 설정' },
+    { to: '/my/privacy', label: '내 데이터' },
+    { to: '/my/notice', label: '서비스 안내' },
+  ]
+
+  /**
+   * 시연 시계. useDemoClock이 모든 조회를 다시 불러온 뒤(새 날짜의 GET /me 포함) 이 onSuccess가 불린다.
+   * 날짜를 바꾸면 홈으로 가서 새 날의 기분 팝업(동의한 사용자)부터 이어지게 한다.
+   */
+  const setClock = (now: string | null, message: string, goHome = false) =>
+    clock.mutate(now, {
+      onSuccess: () => {
+        toast(message)
+        if (goHome) navigate('/groups')
+      },
+      onError: (e) => toast(errorMessage(e)),
+    })
 
   const { hour, minute } = kstHourMinute(now)
 
   return (
     <Page withTabBar gap={12}>
-      <PageHeader title="마이" />
+      <PageHeader title="마이페이지" />
       {/* 대표 캐릭터: 내 그룹 중 가장 많이 자란 캐릭터를 홈·그룹 상세와 같은 모습으로. 누르면 도감 */}
       <Link to="/collection" className={styles.profile} aria-label="캐릭터 도감 보기">
         {rep ? (
@@ -63,9 +126,9 @@ export function MyPage() {
         )}
         <div className={styles.profileText}>
           <p className={styles.nickname}>{me.data?.nickname ?? ''}</p>
-          <p className={styles.summary}>{summary || '계정은 이 기기에만 있어요'}</p>
+          <p className={styles.summary}>{startedOn} 시작</p>
           <p className={styles.repLabel}>
-            {rep ? `${rep.group.name}의 ${stageNameOf(rep)} · ${progressLabel(rep)}` : '그룹에서 캐릭터를 키워 보세요'}
+            {rep ? `${repNickname ?? `${rep.group.name}의 ${stageNameOf(rep)}`} · ${progressLabel(rep)}` : '그룹에서 캐릭터를 키워 보세요'}
           </p>
         </div>
         <span className={styles.profileChevron} aria-hidden>
@@ -73,24 +136,34 @@ export function MyPage() {
         </span>
       </Link>
 
-      <nav className={styles.menu} aria-label="마이 메뉴">
-        {MENU.map((m) => (
-          <Link key={m.to} to={m.to} className={styles.menuItem}>
-            {m.label}
+      <nav className={styles.menu} aria-label="마이페이지 메뉴">
+        {menu.map((m) => (
+          <Link key={m.label} to={m.to} className={styles.menuItem}>
+            <span className={styles.menuText}>
+              <b>{m.label}</b>
+            </span>
             <span aria-hidden>›</span>
           </Link>
         ))}
       </nav>
 
-      <p className={styles.notice}>
-        이 앱은 치료 서비스가 아니고 위기를 감지하지 못해요. 지금 힘들면 <Link to="/help">24시간 채널</Link>로 연락하세요.
-      </p>
+      <section className={styles.knowCard}>
+        <h2>알아 두세요</h2>
+        <p>
+          이 앱은 치료 서비스가 아니고 위기를 감지하지 못해요.
+          <br />
+          지금 힘들면 <a href="tel:109">109</a> 또는 <a href="tel:15770199">1577-0199</a>로 연락하세요.
+        </p>
+      </section>
 
+      {showDemoTools ? (
+      <details className={styles.demoWrap}>
+        <summary>시연 도구</summary>
       <Card className={styles.demo}>
         <h2 className={styles.demoTitle}>시연 도구 ({API_MODE === 'mock' ? '목업 서버' : '시연 서버 시계'})</h2>
         <p className={styles.summary}>서버 기준 오늘: {day} {day ? `(${WEEKDAY_LABELS[weekdayOf(day)]})` : ''}</p>
         <div className={styles.demoRow}>
-          <Button size="md" variant="secondary" onClick={() => setClock(kstIso(addDays(day, 1), hour, minute), '하루를 넘겼어요')}>
+          <Button size="md" variant="secondary" onClick={() => setClock(kstIso(addDays(day, 1), hour, minute), '하루를 넘겼어요', true)}>
             하루 넘기기
           </Button>
           <Button
@@ -98,8 +171,7 @@ export function MyPage() {
             variant="secondary"
             onClick={() => {
               const wd = weekdayOf(day)
-              setClock(kstIso(addDays(day, wd === 0 ? 0 : 7 - wd), 19, 0), '일요일 19:00으로 옮겼어요 (점검 시간)')
-              navigate('/groups')
+              setClock(kstIso(addDays(day, wd === 0 ? 0 : 7 - wd), 19, 0), '일요일 19:00으로 옮겼어요 (점검 시간)', true)
             }}
           >
             일요일 19시로
@@ -110,20 +182,26 @@ export function MyPage() {
         </Button>
         {API_MODE === 'mock' ? (
           <>
+            <Button size="md" variant="secondary" loading={demoBusy} onClick={loadDemo}>
+              {isDemo ? '시연 데이터 처음부터 다시 불러오기' : '시연 데이터 불러오기 (소은)'}
+            </Button>
+            {/* 시연 종료: 시연 계정일 때만 (목업 모드 시연 도구 안) */}
+            {isDemo ? (
+              <Button size="md" variant="secondary" className={styles.danger} onClick={() => setConfirmEnd(true)}>
+                시연 종료
+              </Button>
+            ) : null}
             <Button
               size="md"
-              variant="secondary"
-              onClick={async () => {
-                seedMockDemo()
-                setDeviceProfile({ birthDate: '2000-05-14', sido: '서울특별시', sigungu: '마포구', job: 'STUDENT' })
-                resetDevice()
-                updateDevice({ onboarded: true })
-                await qc.resetQueries()
-                toast('시연 데이터를 불러왔어요')
-                navigate('/groups')
+              variant="ghost"
+              onClick={() => {
+                const next = queueMode === 'wait' ? 'match' : 'wait'
+                setMockQueueMode(next)
+                setQueueMode(next)
+                toast(next === 'wait' ? '다음 온라인 참여는 대기부터 시작해요 (20초 뒤 배정)' : '다음 온라인 참여는 바로 배정돼요')
               }}
             >
-              시연 데이터 불러오기 (소은)
+              온라인 참여: {queueMode === 'wait' ? '대기부터 (20초 뒤 배정)' : '바로 배정'}
             </Button>
             <p className={styles.summary}>
               초대 코드 시연: {DEMO_INVITE_CODES.join} (참여) · {DEMO_INVITE_CODES.expired} (만료) · {DEMO_INVITE_CODES.full} (가득 참)
@@ -131,34 +209,20 @@ export function MyPage() {
           </>
         ) : null}
       </Card>
+      </details>
+      ) : null}
 
-      <Button variant="ghost" className={styles.danger} onClick={() => setConfirmDelete(true)}>
-        계정 삭제
-      </Button>
-
-      <BottomSheet open={confirmDelete} onClose={() => setConfirmDelete(false)} label="계정 삭제 확인">
-        <h2 className={styles.sheetTitle}>계정을 삭제할까요?</h2>
-        <p className={styles.summary}>그룹에서 모두 나가고 기록이 사라져요. 함께 키운 캐릭터와 도감은 그룹에 남아요. 되돌릴 수 없어요.</p>
-        <Button
-          loading={deleting}
-          onClick={async () => {
-            setDeleting(true)
-            try {
-              await api.deleteMe()
-              clearDeviceProfile()
-              resetDevice()
-              qc.clear()
-              navigate('/welcome', { replace: true })
-            } catch (e) {
-              toast(errorMessage(e))
-            } finally {
-              setDeleting(false)
-            }
-          }}
-        >
-          계정 삭제
+      <BottomSheet open={confirmEnd} onClose={() => setConfirmEnd(false)} label="시연 종료 확인">
+        <h2 className={styles.sheetTitle}>시연을 끝낼까요?</h2>
+        <p className={styles.summary}>
+          {returnEntry
+            ? `시연 계정과 시연 데이터는 지워지고, 시연 전에 쓰던 '${returnEntry.nickname}' 계정으로 돌아가요. 그 계정의 기록은 그대로예요.`
+            : '돌아갈 계정이 없어요. 시연 계정과 시연 데이터를 지우고 시작 화면으로 가요. 계정 관리에 보관된 다른 계정은 그대로예요.'}
+        </p>
+        <Button loading={demoBusy} onClick={finishDemo}>
+          시연 종료
         </Button>
-        <Button variant="ghost" onClick={() => setConfirmDelete(false)}>
+        <Button variant="ghost" onClick={() => setConfirmEnd(false)}>
           취소
         </Button>
       </BottomSheet>

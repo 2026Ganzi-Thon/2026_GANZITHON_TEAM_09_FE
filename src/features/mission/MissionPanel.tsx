@@ -13,7 +13,16 @@ import { updateDevice, useDevice } from '../../device/store'
 import { isMoodPromptDue } from '../selectors'
 import { isSizeLowered } from './missionRules'
 import { missionText } from './missionText'
+import { isWritingMission } from '../memory/format'
+import { useFinishMission } from './useFinishMission'
+import { useOnline } from '../../hooks/useOnline'
 import styles from './MissionPanel.module.css'
+
+/** 마지막 글자에 받침이 있는지 ('번'·'곡' → 이, '개' → 가) */
+const hasBatchim = (word: string) => {
+  const code = word.charCodeAt(word.length - 1) - 0xac00
+  return code >= 0 && code <= 11171 && code % 28 !== 0
+}
 
 /**
  * S21 미션 준비 (Figma 4): 오늘의 내 미션(개인, 하루 1개, 내 모든 그룹에 반영).
@@ -29,6 +38,8 @@ export function MissionPanel({ fromGroupId }: { fromGroupId?: number }) {
   const today = me.data?.today ?? ''
   const moods = useMoods(today, today, !!me.data?.sensitiveConsent)
   const start = useStartMission()
+  const { finish, isPending: finishing } = useFinishMission()
+  const online = useOnline()
   const [place, setPlace] = useState<Place | undefined>()
   const [minutes, setMinutes] = useState<MissionMinutes | undefined>()
 
@@ -49,6 +60,11 @@ export function MissionPanel({ fromGroupId }: { fromGroupId?: number }) {
 
   const started = m.status === 'STARTED'
   const curPlace = place ?? m.place ?? m.defaults.place
+  // 밖/안 문구는 둘 중 하나를 고르는 대안이다 (추가 행동이 아님, #12). 미션 데이터는 그대로 두고 표시만 바꾼다
+  const placeName = curPlace === 'OUTDOOR' ? '밖에서' : '안에서'
+  const otherName = curPlace === 'OUTDOOR' ? '안에서' : '밖에서'
+  const otherText = curPlace === 'OUTDOOR' ? m.topic.indoorText : m.topic.outdoorText
+  const writing = isWritingMission(missionText(m, curPlace))
   const curMinutes = minutes ?? m.minutes ?? m.defaults.minutes
   const size = m.sizeByMinutes[String(curMinutes) as '5' | '10' | '20']
   const unit = sizeUnit(m.topic)
@@ -57,7 +73,7 @@ export function MissionPanel({ fromGroupId }: { fromGroupId?: number }) {
     mood && isSizeLowered(mood, curMinutes)
       ? `오늘 기분 '${moodById(mood).label}'라 한 단계 작게 추천했어요 · 바꿀 수 있어요`
       : m.topic.sizeType === 'COUNT'
-        ? `${curMinutes}분이면 ${size}${unit}이 알맞아요 · 어느 크기든 똑같이 1회예요`
+        ? `${curMinutes}분이면 ${size}${unit}${hasBatchim(unit) ? '이' : '가'} 알맞아요 · 어느 크기든 똑같이 1회예요`
         : '어느 크기든 똑같이 1회예요 · 바꿀 수 있어요'
 
   const begin = async (choice: { minutes: MissionMinutes; place: Place }) => {
@@ -78,15 +94,19 @@ export function MissionPanel({ fromGroupId }: { fromGroupId?: number }) {
       <div className={styles.topic}>
         <span className={styles.eyebrow}>오늘의 내 미션 · 내 모든 그룹에 반영</span>
         <p className={styles.title}>{missionText(m, curPlace)}</p>
-        <p className={styles.desc}>
-          {curPlace === 'OUTDOOR' ? `안에서 하면: ${m.topic.indoorText}` : `밖에서 하면: ${m.topic.outdoorText}`}
-        </p>
+        {started ? (
+          <p className={styles.desc}>{placeName} 하는 미션이에요</p>
+        ) : (
+          <p className={styles.desc}>
+            {otherName} 한다면 대신 <b>'{otherText}'</b>
+          </p>
+        )}
+        {writing ? <p className={styles.desc}>다 하고 나면 좋았던 일을 적을 칸이 나와요 (나만 봐요)</p> : null}
       </div>
       {!started ? (
         <>
           <ChoiceGroup
-            label="어디서 할까요"
-            hideLabel
+            label="어디서 할까요 · 둘 중 하나만 해요"
             value={curPlace}
             options={[
               { value: 'OUTDOOR' as Place, label: '밖에서' },
@@ -103,14 +123,19 @@ export function MissionPanel({ fromGroupId }: { fromGroupId?: number }) {
           <p className={styles.reason}>{reason}</p>
         </>
       ) : null}
-      <Button loading={start.isPending} onClick={() => begin({ minutes: curMinutes, place: curPlace })}>
+      {!online ? <p className={styles.reason}>연결되면 시작하고 완료할 수 있어요.</p> : null}
+      <Button disabled={!online} loading={start.isPending} onClick={() => begin({ minutes: curMinutes, place: curPlace })}>
         {started ? '진행 중인 미션 이어하기' : '시작하기'}
       </Button>
       {!started ? (
-        <Button variant="ghost" onClick={() => begin(m.defaults)}>
+        <Button variant="ghost" disabled={!online} onClick={() => begin(m.defaults)}>
           그냥 하나 골라줘
         </Button>
       ) : null}
+      {/* MIS-07: 시작하지 않은 미션도 완료할 수 있다 (정직 기반) */}
+      <button type="button" className={styles.doneLink} disabled={!online || finishing} onClick={() => finish(m.date, fromGroupId)}>
+        {started ? '다 했어요' : '이미 했다면 바로 완료하기'}
+      </button>
     </>
   )
 }

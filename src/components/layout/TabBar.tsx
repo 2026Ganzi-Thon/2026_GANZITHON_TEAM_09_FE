@@ -9,7 +9,7 @@ const TABS = [
   { to: '/groups', label: '그룹', icon: groupIcon },
   { to: '/records', label: '내 기록', icon: recordsIcon },
   { to: '/help', label: '도움받기', icon: helpIcon },
-  { to: '/my', label: '마이', icon: myIcon },
+  { to: '/my', label: '마이페이지', icon: myIcon },
 ]
 
 /** Figma TabBar: 활성=그룹 / 내 기록 / 도움받기 / 마이. 아이콘은 mask로 색을 바꾼다. */

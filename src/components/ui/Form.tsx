@@ -3,12 +3,14 @@ import styles from './Form.module.css'
 
 interface FieldProps {
   label: string
+  /** 입력칸 안 오른쪽에 붙는 보조 표시 (예: 글자 수 2 / 10) */
+  suffix?: ReactNode
   hint?: ReactNode
   error?: string | null
   optional?: boolean
 }
 
-export function TextField({ label, hint, error, optional, ...rest }: FieldProps & InputHTMLAttributes<HTMLInputElement>) {
+export function TextField({ label, hint, error, optional, suffix, ...rest }: FieldProps & InputHTMLAttributes<HTMLInputElement>) {
   const id = useId()
   return (
     <div className={styles.field}>
@@ -16,13 +18,20 @@ export function TextField({ label, hint, error, optional, ...rest }: FieldProps 
         {label}
         {optional ? <span className={styles.optional}>선택</span> : null}
       </label>
-      <input
-        id={id}
-        className={`${styles.input} ${error ? styles.invalid : ''}`}
-        aria-invalid={!!error || undefined}
-        aria-describedby={error || hint ? `${id}-desc` : undefined}
-        {...rest}
-      />
+      <span className={suffix ? styles.inputWrap : undefined} style={suffix ? undefined : { display: 'contents' }}>
+        <input
+          id={id}
+          className={`${styles.input} ${error ? styles.invalid : ''} ${suffix ? styles.withSuffix : ''}`}
+          aria-invalid={!!error || undefined}
+          aria-describedby={error || hint ? `${id}-desc` : undefined}
+          {...rest}
+        />
+        {suffix ? (
+          <span className={styles.suffix} aria-hidden>
+            {suffix}
+          </span>
+        ) : null}
+      </span>
       {error || hint ? (
         <p id={`${id}-desc`} className={error ? styles.error : styles.hint}>
           {error ?? hint}
@@ -74,21 +83,26 @@ interface ChoiceGroupProps<T extends string | number> {
   onChange: (value: T) => void
   columns?: number
   hideLabel?: boolean
+  /** 둥근 칩으로 줄바꿈 배치 (Figma 14 '지금 하는 일') */
+  chips?: boolean
 }
 
 /** 시간(5·10·20분), 지금 하는 일 등 버튼형 단일 선택 */
-export function ChoiceGroup<T extends string | number>({ label, value, options, onChange, columns, hideLabel }: ChoiceGroupProps<T>) {
+export function ChoiceGroup<T extends string | number>({ label, value, options, onChange, columns, hideLabel, chips }: ChoiceGroupProps<T>) {
   return (
     <div className={styles.field} role="radiogroup" aria-label={label}>
       {hideLabel ? null : <span className={styles.label}>{label}</span>}
-      <div className={styles.choices} style={{ gridTemplateColumns: `repeat(${columns ?? options.length}, minmax(0, 1fr))` }}>
+      <div
+        className={chips ? styles.chips : styles.choices}
+        style={chips ? undefined : { gridTemplateColumns: `repeat(${columns ?? options.length}, minmax(0, 1fr))` }}
+      >
         {options.map((o) => (
           <button
             key={String(o.value)}
             type="button"
             role="radio"
             aria-checked={value === o.value}
-            className={`${styles.choice} ${value === o.value ? styles.choiceOn : ''}`}
+            className={`${chips ? styles.chip : styles.choice} ${value === o.value ? styles.choiceOn : ''}`}
             onClick={() => onChange(o.value)}
           >
             {o.label}

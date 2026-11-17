@@ -20,7 +20,7 @@ export function GroupCard({ group }: { group: GroupSummary }) {
         </span>
         <span className={styles.meta}>{groupMetaLabel(group)}</span>
         <span className={styles.today}>
-          오늘 {today.total}명 중 {today.completed}명 완료
+          그룹 오늘 {today.total}명 중 {today.completed}명 완료
         </span>
         <StageBar growth={character.progress} label={`${group.name} 캐릭터 성장`} />
         <span className={styles.count}>{progressLabel(character)}</span>

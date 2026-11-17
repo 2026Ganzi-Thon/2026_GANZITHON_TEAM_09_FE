@@ -1,0 +1,22 @@
+/* 온보딩 모든 화면 오른쪽 위: 가입 전에도 도움받기로 갈 수 있다 (HELP-01) */
+.link {
+  position: absolute;
+  top: calc(var(--safe-top) + 20px);
+  right: var(--gutter);
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--color-card);
+  color: var(--color-navy);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+
+/* 제목이 오른쪽 위 '도움받기'와 겹치지 않게 제목 줄 오른쪽을 비워 둔다 (320px에서 긴 제목은 두 줄) */
+.screen :global(main > header:first-child) {
+  padding-right: 84px;
+}

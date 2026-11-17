@@ -3,7 +3,6 @@ import { Page, PageHeader } from '../../components/layout/Page'
 import { Button } from '../../components/ui/Button'
 import styles from './onboarding.module.css'
 
-const isIOS = typeof navigator !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent)
 const isStandalone =
   typeof window !== 'undefined' &&
   (window.matchMedia?.('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true)
@@ -19,29 +18,27 @@ export function InstallGuidePage() {
 
   return (
     <Page gap={14}>
-      <PageHeader title="홈 화면에 추가해 주세요" back="/welcome" />
-      <p className={styles.desc}>앱처럼 바로 열리고, 인터넷이 끊겨도 도움받기 탭이 열려요.</p>
+      <PageHeader title="홈 화면에 추가해 주세요" />
+      <p className={styles.desc}>앱처럼 열고 알림을 받으려면 홈 화면에 추가해야 해요.</p>
 
       <section className={styles.platformCard}>
         <span className={styles.platformTitle}>아이폰 · 사파리</span>
         <ol className={styles.steps}>
-          <li>아래 공유 버튼(⬆)을 눌러요</li>
-          <li>'홈 화면에 추가'를 골라요</li>
-          <li>홈 화면의 행운핑으로 다시 열어요</li>
+          <li>아래 공유 버튼(⬆) 누르기</li>
+          <li>'홈 화면에 추가' 누르기</li>
+          <li>홈 화면의 행운핑으로 다시 열기</li>
         </ol>
       </section>
 
       <section className={styles.platformCard}>
         <span className={styles.platformTitle}>안드로이드 · 크롬</span>
         <ol className={styles.steps}>
-          <li>오른쪽 위 ⋮ 메뉴를 눌러요</li>
-          <li>'홈 화면에 추가'를 골라요</li>
+          <li>오른쪽 위 ⋮ → '홈 화면에 추가'</li>
         </ol>
       </section>
 
       <p className={styles.infoCard}>
-        <b>사파리에서 만든 기록은 홈 화면 앱으로 옮겨지지 않아요</b>
-        {isIOS ? '홈 화면에 추가한 뒤, 그 앱에서 이어서 시작해 주세요.' : '홈 화면에 추가한 앱에서 시작하면 알림도 받을 수 있어요.'}
+        아이폰은 꼭 추가한 앱에서 이어서 시작해 주세요. 사파리에서 만든 기록은 홈 화면 앱으로 옮겨지지 않아요.
       </p>
 
       <Button onClick={() => navigate('/onboarding/nickname')}>추가했어요</Button>

@@ -1,40 +1,46 @@
 import { useState } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ApiError, errorMessage } from '../../api/errors'
-import { useBlockMember, useCreateInvite, useGroup, useGroupPings, useLeaveGroup, useReportMember } from '../../api/queries'
+import { useGroup, useGroupPings, useGroups, useLeaveGroup, useMe, useMissionToday } from '../../api/queries'
+import { isMoodPromptDue } from '../../features/selectors'
+import type { GroupMember } from '../../api/types'
 import { Character } from '../../components/character/Character'
 import { StageBar, StageStepper } from '../../components/character/StageProgress'
 import { BottomSheet } from '../../components/ui/BottomSheet'
-import { Button } from '../../components/ui/Button'
+import { Button, ButtonLink } from '../../components/ui/Button'
 import { LoadError, Loading } from '../../components/ui/Loading'
 import { PingBadge } from '../../components/ui/Ping'
 import { useToast } from '../../components/ui/Toast'
-import { updateDevice, useDevice } from '../../device/store'
+import { useDevice } from '../../device/store'
+import { MemberSheet } from '../../features/group/MemberSheet'
 import { MissionPanel } from '../../features/mission/MissionPanel'
 import { displayStage, groupMetaLabel, progressLabel, stageNameOf, variantOf } from '../../features/selectors'
-import { useNow } from '../../hooks/useNow'
 import styles from './groups.module.css'
 
 type Sheet = null | 'menu' | 'leave'
 
-const formatCode = (code: string) => (code.length === 8 ? `${code.slice(0, 4)} ${code.slice(4)}` : code)
-
 /** S24 그룹 상세 + S21 미션 준비 (Figma 4) */
 export function GroupDetailPage() {
   const groupId = Number(useParams().groupId)
-  const now = useNow()
+  const location = useLocation()
   const navigate = useNavigate()
   const toast = useToast()
   const device = useDevice()
   const group = useGroup(groupId)
   const pings = useGroupPings(groupId)
-  const invite = useCreateInvite()
   const leave = useLeaveGroup()
-  const block = useBlockMember()
-  const report = useReportMember()
+  const me = useMe()
+  // 오늘 미션은 개인 단위라 내 모든 그룹에 같은 상태다 (MIS-08). 기분 팝업이 닫힌 뒤에만 부른다
+  const missionToday = useMissionToday(!isMoodPromptDue(me.data, device.moodPromptDay, device.onboarded))
+  const myMission = missionToday.data?.status
+  const myGroups = useGroups().data?.groups ?? []
   const [sheet, setSheet] = useState<Sheet>(null)
+  const [member, setMember] = useState<GroupMember | null>(null)
+  // 온라인 그룹에 막 배정됐을 때 별칭 소개 (UserFlow 6절)
+  const justJoined = (location.state as { joinedOnline?: boolean } | null)?.joinedOnline
 
   if (!Number.isFinite(groupId)) return <Navigate to="/groups" replace />
+  if (device.pendingCompletions[groupId]) return <Navigate to={`/groups/${groupId}/completed`} replace />
   if (group.isPending) return <Loading />
   if (group.isError) {
     // 구성원이 아니면 404 (PRD 4절) → 목록으로
@@ -44,18 +50,6 @@ export function GroupDetailPage() {
 
   const g = group.data
   const meta = groupMetaLabel({ type: g.type, memberCount: g.members.length })
-  const lastInvite = device.invites[g.groupId]
-  const inviteValid = lastInvite && Date.parse(lastInvite.expiresAt) > now
-
-  const makeInvite = async () => {
-    try {
-      const res = await invite.mutateAsync(g.groupId)
-      updateDevice((d) => ({ invites: { ...d.invites, [g.groupId]: res } }))
-      toast('새 초대 코드를 만들었어요. 이전 코드는 더 이상 쓸 수 없어요')
-    } catch (e) {
-      toast(errorMessage(e))
-    }
-  }
 
   return (
     <>
@@ -72,21 +66,50 @@ export function GroupDetailPage() {
             ⋯
           </button>
         </div>
+        {/* 그룹이 여러 개면 여기서 바로 다른 그룹으로 (각 그룹은 캐릭터를 따로 키운다) */}
+        {myGroups.length > 1 ? (
+          <nav className={styles.switcher} aria-label="내 그룹 바꾸기">
+            {myGroups.map((x) => (
+              <Link
+                key={x.groupId}
+                to={`/groups/${x.groupId}`}
+                replace
+                className={`${styles.switchPill} ${x.groupId === g.groupId ? styles.switchOn : ''}`}
+                aria-current={x.groupId === g.groupId ? 'page' : undefined}
+              >
+                {x.name}
+              </Link>
+            ))}
+          </nav>
+        ) : null}
+        {justJoined && g.type === 'ONLINE' ? (
+          <p className={styles.aliasCard} role="status">
+            이 그룹에서 당신은 <b>'{g.me.displayName}'</b>이에요
+          </p>
+        ) : null}
         <Link to={`/collection/${g.groupId}/${g.character.characterId ?? 'current'}`} className={styles.heroCharacter} aria-label="성장 과정 보기">
           <Character stage={displayStage(g.character)} variant={variantOf(g.character.kind)} size={112} title={`${g.name}의 ${stageNameOf(g.character)}`} />
         </Link>
         <p className={styles.charName}>
           {g.name}의 {stageNameOf(g.character)}
-        </p>
-        <StageStepper growth={g.character.progress} />
+        </p>        <StageStepper growth={g.character.progress} />
         <div className={styles.heroBar}>
           <StageBar growth={g.character.progress} height={8} track="white" label="캐릭터 성장" />
         </div>
         <p className={styles.heroCount}>
-          {progressLabel(g.character)} · 오늘 {g.today.total}명 중 {g.today.completed}명 완료
+          {progressLabel(g.character)} · 그룹 전체 오늘 {g.today.total}명 중 {g.today.completed}명 완료
+        </p>
+        {/* 그룹 합계와 헷갈리지 않게 내 상태는 따로 (#19). 이름은 이 그룹에서 보이는 내 이름(친구: 닉네임, 온라인: 별칭) */}
+        <p className={styles.myStatus}>
+          <span className={styles.myName}>나 · {g.me.displayName}</span>
+          {myMission ? (
+            <span className={myMission === 'COMPLETED' ? styles.myDone : styles.myTodo}>
+              {myMission === 'COMPLETED' ? '오늘 미션 완료' : myMission === 'STARTED' ? '미션 하는 중' : '아직 안 했어요'}
+            </span>
+          ) : null}
         </p>
         <div className={styles.pingRow}>
-          <span>오늘 받은 핑</span>
+          <span>그룹이 오늘 받은 핑</span>
           {!pings.data?.pings.length ? (
             <span className={styles.heroMeta}>아직 없어요</span>
           ) : (
@@ -96,6 +119,39 @@ export function GroupDetailPage() {
       </header>
 
       <main className={styles.body}>
+        {/* 구성원 (S24): GET /groups/{id}의 members. 친구 그룹은 닉네임, 온라인은 이 그룹 전용 별칭. 누가 했는지는 없다(CHR-10) */}
+        <section className={styles.memberCard} aria-label="구성원">
+          <div className={styles.memberHead}>
+            <h2>구성원 {g.members.length}명</h2>
+            <span>{g.type === 'ONLINE' ? '이 그룹에서만 쓰는 별칭' : g.type === 'FRIEND' ? '친구 그룹 · 닉네임' : '1인 그룹'}</span>
+          </div>
+          <ul className={styles.memberChips}>
+            {g.members.map((m) => {
+              const isMe = m.memberId === g.me.memberId
+              const blocked = device.blockedMemberIds.includes(m.memberId)
+              const label = `${m.displayName}${isMe ? ' (나)' : ''}${blocked ? ' · 차단함' : ''}`
+              return (
+                <li key={m.memberId}>
+                  {g.type === 'ONLINE' && !isMe ? (
+                    <button type="button" className={styles.memberChip} onClick={() => setMember(m)} aria-label={`${label} · 신고·차단`}>
+                      {label}
+                    </button>
+                  ) : (
+                    <span className={`${styles.memberChip} ${isMe ? styles.memberChipMe : ''}`}>{label}</span>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+          <p className={styles.memberNote}>
+            누가 미션을 했는지는 보이지 않아요.{g.type === 'ONLINE' ? ' 구성원을 누르면 차단·신고할 수 있어요.' : ''}
+          </p>
+          {g.type === 'FRIEND' && g.members.length < 6 ? (
+            <Link to={`/groups/${g.groupId}/invite`} className={styles.memberInvite}>
+              친구 초대하기 ›
+            </Link>
+          ) : null}
+        </section>
         <MissionPanel fromGroupId={g.groupId} />
       </main>
 
@@ -103,79 +159,23 @@ export function GroupDetailPage() {
         <h2 className={styles.sheetTitle}>{g.name}</h2>
 
         {g.type === 'FRIEND' ? (
-          <div className={styles.codeBox}>
-            {inviteValid ? (
-              <>
-                <span className={styles.code}>{formatCode(lastInvite.code)}</span>
-                <span className={styles.codeMeta}>
-                  초대 코드 · {g.members.length}/6명 · {new Date(lastInvite.expiresAt).toLocaleDateString('ko-KR')}까지
-                </span>
-              </>
-            ) : (
-              <span className={styles.codeMeta}>친구를 부르려면 초대 코드를 만들어 주세요 · {g.members.length}/6명</span>
-            )}
-            <Button size="md" variant="secondary" loading={invite.isPending} onClick={makeInvite}>
-              {inviteValid ? '새 코드 만들기' : '초대 코드 만들기'}
-            </Button>
-          </div>
+          <ButtonLink to={`/groups/${g.groupId}/invite`} size="md">
+            친구 초대 · {g.members.length}/6명
+          </ButtonLink>
         ) : null}
 
-        <div className={styles.memberList}>
-          {g.members.map((m) => {
-            const isMe = m.memberId === g.me.memberId
-            const blocked = device.blockedMemberIds.includes(m.memberId)
-            return (
-              <div key={m.memberId} className={styles.memberRow}>
-                <span>
-                  {m.displayName}
-                  {isMe ? ' (나)' : ''}
-                  {blocked ? ' · 차단함' : ''}
-                </span>
-                {g.type === 'ONLINE' && !isMe ? (
-                  <span className={styles.memberActions}>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        report.mutate(
-                          { groupId: g.groupId, memberId: m.memberId, reason: 'OTHER' },
-                          { onSuccess: () => toast('신고를 접수했어요. 신고한 사실은 상대에게 알리지 않아요'), onError: (e) => toast(errorMessage(e)) },
-                        )
-                      }
-                    >
-                      신고
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        block.mutate(
-                          { groupId: g.groupId, memberId: m.memberId, block: !blocked },
-                          {
-                            onSuccess: () => {
-                              updateDevice((d) => ({
-                                blockedMemberIds: blocked ? d.blockedMemberIds.filter((x) => x !== m.memberId) : [...d.blockedMemberIds, m.memberId],
-                              }))
-                              toast(blocked ? '차단을 풀었어요' : '차단했어요. 이 사람이 보낸 핑이 나에게 안 보여요')
-                            },
-                            onError: (e) => toast(errorMessage(e)),
-                          },
-                        )
-                      }
-                    >
-                      {blocked ? '차단 풀기' : '차단'}
-                    </button>
-                  </span>
-                ) : null}
-              </div>
-            )
-          })}
-        </div>
         <p className={styles.intro}>
           그룹에는 '몇 명 중 몇 명'만 보이고, 누가 했는지는 보이지 않아요. 기분·점검·도움받기 기록도 보이지 않아요.
         </p>
+        <ButtonLink to={`/groups/${g.groupId}/collection`} variant="secondary" size="md">
+          그룹 도감
+        </ButtonLink>
         <Button variant="ghost" className={styles.danger} onClick={() => setSheet('leave')}>
           그룹 나가기
         </Button>
       </BottomSheet>
+
+      <MemberSheet groupId={g.groupId} groupName={g.name} member={member} onClose={() => setMember(null)} />
 
       <BottomSheet open={sheet === 'leave'} onClose={() => setSheet(null)} label="그룹 나가기 확인">
         <h2 className={styles.sheetTitle}>'{g.name}'에서 나갈까요?</h2>

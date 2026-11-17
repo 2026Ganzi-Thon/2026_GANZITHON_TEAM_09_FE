@@ -1,6 +1,6 @@
 import type { HaengunApi } from './client'
 import { ApiError } from './errors'
-import type { ApiErrorBody } from './types'
+import type { ApiErrorBody, ApiErrorCode } from './types'
 
 /**
  * 실서버 구현. 화면과 API는 같은 도메인(`/api/v1`)이라 쿠키(hp_session)가 자동으로 붙는다.
@@ -13,7 +13,28 @@ function readCookie(name: string): string | null {
   return match ? decodeURIComponent(match[1]) : null
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+/** 본문에 code가 없을 때(프록시 오류 페이지 등) 상태 코드로 정한다 */
+function codeForStatus(status: number): ApiErrorCode {
+  if (status === 401) return 'UNAUTHENTICATED'
+  if (status === 405) return 'METHOD_NOT_ALLOWED'
+  if (status >= 500) return 'INTERNAL_ERROR'
+  return 'VALIDATION_FAILED'
+}
+
+function parseJson(text: string): unknown {
+  if (!text) return undefined
+  try {
+    return JSON.parse(text)
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * CSRF_INVALID(403)를 받으면 서버가 XSRF-TOKEN 쿠키를 새로 심은 상태라 한 번만 다시 보낸다
+ * (백엔드 회신 2026-11-16 · 3절).
+ */
+async function request<T>(method: string, path: string, body?: unknown, retried = false): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' }
   if (body !== undefined) headers['Content-Type'] = 'application/json'
   if (method !== 'GET') {
@@ -34,11 +55,12 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   }
 
   if (res.status === 204) return undefined as T
-  const text = await res.text()
-  const data = text ? JSON.parse(text) : undefined
+  const data = parseJson(await res.text())
   if (!res.ok) {
     const err = (data ?? {}) as Partial<ApiErrorBody>
-    throw new ApiError(res.status, err.code ?? 'VALIDATION_FAILED', err.message ?? '', err.fields)
+    const code = err.code ?? codeForStatus(res.status)
+    if (code === 'CSRF_INVALID' && method !== 'GET' && !retried) return request<T>(method, path, body, true)
+    throw new ApiError(res.status, code, err.message ?? '', err.fields)
   }
   return data as T
 }

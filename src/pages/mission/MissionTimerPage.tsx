@@ -1,17 +1,14 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { errorMessage } from '../../api/errors'
-import { qk, useCompleteMission, useGroups, useMissionToday } from '../../api/queries'
-import type { GroupsResponse } from '../../api/types'
+import { useGroups, useMissionToday } from '../../api/queries'
 import { Page } from '../../components/layout/Page'
 import { BottomSheet } from '../../components/ui/BottomSheet'
 import { Button } from '../../components/ui/Button'
 import { Loading } from '../../components/ui/Loading'
-import { useToast } from '../../components/ui/Toast'
 import { sizeUnit } from '../../data/missions'
-import { updateDevice, useDevice } from '../../device/store'
-import { stageOf } from '../../features/character/growth'
+import { useDevice } from '../../device/store'
+import { useFinishMission } from '../../features/mission/useFinishMission'
+import { useOnline } from '../../hooks/useOnline'
 import { missionText } from '../../features/mission/missionText'
 import { useNow } from '../../hooks/useNow'
 import styles from './mission.module.css'
@@ -27,18 +24,17 @@ function format(sec: number) {
 /** S22 타이머 (Figma 5). 시작 시각 기준으로 경과 시간을 계산해 화면을 꺼도 이어진다 (MIS-06) */
 export function MissionTimerPage() {
   const navigate = useNavigate()
-  const toast = useToast()
-  const qc = useQueryClient()
   const device = useDevice()
   const mission = useMissionToday()
   const groups = useGroups()
-  const complete = useCompleteMission()
+  const { finish, isPending: finishing } = useFinishMission()
+  const online = useOnline()
   const now = useNow(500)
   const [confirmStop, setConfirmStop] = useState(false)
 
   if (mission.isPending) return <Loading />
   const m = mission.data
-  if (!m || complete.isPending) return <Loading />
+  if (!m || finishing) return <Loading />
   if (m.status === 'COMPLETED') return <Navigate to="/mission/done" replace />
   if (m.status !== 'STARTED') return <Navigate to="/mission" replace />
 
@@ -55,34 +51,7 @@ export function MissionTimerPage() {
   const ratio = Math.min(1, Math.max(0, elapsed / total))
   const groupCount = groups.data?.groups.length ?? 0
 
-  const done = async () => {
-    // 반영 전 성장치를 잡아 두고 완료 → 완료 화면에서 성장량을 보여준다
-    const before = qc.getQueryData<GroupsResponse>(qk.groups)?.groups ?? []
-    try {
-      const res = await complete.mutateAsync()
-      updateDevice({
-        lastCompletion: {
-          day: m.date,
-          fromGroupId: device.missionFromGroupId,
-          groups: res.groups.map((g) => {
-            const b = before.find((x) => x.groupId === g.groupId)?.character.progress ?? g.character.progress
-            return {
-              groupId: g.groupId,
-              before: b,
-              after: g.character.progress,
-              stageBefore: stageOf(b),
-              stageAfter: stageOf(g.character.progress),
-              completed: g.today.completed,
-              total: g.today.total,
-            }
-          }),
-        },
-      })
-      navigate('/mission/done', { replace: true })
-    } catch (e) {
-      toast(errorMessage(e, '완료를 저장하지 못했어요'))
-    }
-  }
+  const done = () => finish(m.date)
 
   return (
     <Page tone="navy" gap={18} className={styles.timerPage}>
@@ -121,8 +90,8 @@ export function MissionTimerPage() {
       <p className={styles.timerNote}>화면을 꺼도 시간은 계속 흘러요</p>
 
       <div className={styles.timerActions}>
-        <Button variant="secondary" onClick={done}>
-          다 했어요
+        <Button variant="secondary" disabled={!online} onClick={done}>
+          {online ? '다 했어요' : '연결되면 완료할 수 있어요'}
         </Button>
         <Button variant="ghostOnNavy" onClick={() => setConfirmStop(true)}>
           그만하기

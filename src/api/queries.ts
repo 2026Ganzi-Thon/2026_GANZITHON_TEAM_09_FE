@@ -1,7 +1,10 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './index'
+import { updateDevice } from '../device/store'
+import { isPersistenceFrozen } from '../device/persistence'
+import { syncActiveAccount } from '../device/accounts'
 import { ApiError } from './errors'
-import type { Mood, NotificationSettings, PingEmoji, ReportReason, StartMissionRequest } from './types'
+import type { GroupsResponse, MissionToday, Mood, NotificationSettings, PingEmoji, ReportReason, StartMissionRequest } from './types'
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -39,7 +42,11 @@ export function useMe() {
     queryKey: qk.me,
     queryFn: async () => {
       try {
-        return await api.getMe()
+        const me = await api.getMe()
+        writeCache('me', { today: me.today })
+        // 목업 다중 계정: 새로 만든 계정 등록·닉네임 맞추기 (저장 잠금 중에는 하지 않음)
+        if (!isPersistenceFrozen()) syncActiveAccount(me)
+        return me
       } catch (e) {
         if (e instanceof ApiError && e.code === 'UNAUTHENTICATED') return null
         throw e
@@ -48,12 +55,87 @@ export function useMe() {
   })
 }
 
-export const useGroups = (enabled = true) => useQuery({ queryKey: qk.groups, queryFn: api.getGroups, enabled })
+/*
+ * 오프라인 대비 (UserFlow S20 '오프라인'): 그룹 목록·오늘 미션은 마지막으로 받은 값을 기기에 남겨 두고,
+ * 앱을 다시 열었을 때 먼저 보여준 뒤 연결되면 새로 받는다.
+ */
+const CACHE_PREFIX = 'haengunping:cache:'
+
+function readCache<T>(key: string): T | undefined {
+  try {
+    const raw = localStorage.getItem(CACHE_PREFIX + key)
+    return raw ? (JSON.parse(raw) as T) : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function writeCache(key: string, value: unknown) {
+  if (isPersistenceFrozen()) return
+  try {
+    localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(value))
+  } catch {
+    /* 저장 공간 부족 등 */
+  }
+}
+
+/** 계정 삭제 등에서 기기에 남긴 서버 응답을 지운다 */
+export function clearPersistedCache() {
+  try {
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith(CACHE_PREFIX))
+      .forEach((k) => localStorage.removeItem(k))
+  } catch {
+    /* noop */
+  }
+}
+
+/** GET /groups. 완성 연출 대상(justCompleted)은 한 번만 오므로 받자마자 기기에 남긴다 (S26) */
+async function fetchGroups() {
+  const res = await api.getGroups()
+  writeCache('groups', { ...res, groups: res.groups.map(({ justCompleted: _drop, ...g }) => g) })
+  const done = res.groups.filter((g) => g.justCompleted)
+  if (done.length) {
+    updateDevice((d) => ({
+      pendingCompletions: {
+        ...d.pendingCompletions,
+        ...Object.fromEntries(
+          done.map((g) => [g.groupId, { groupName: g.name, kind: g.justCompleted!.kind, completedOn: g.justCompleted!.completedOn, memberCount: g.memberCount }]),
+        ),
+      },
+    }))
+  }
+  return res
+}
+
+export const useGroups = (enabled = true) =>
+  useQuery({
+    queryKey: qk.groups,
+    queryFn: fetchGroups,
+    enabled,
+    initialData: () => readCache<GroupsResponse>('groups'),
+    initialDataUpdatedAt: 0,
+  })
 export const useGroup = (id: number) => useQuery({ queryKey: qk.group(id), queryFn: () => api.getGroup(id), enabled: id > 0 })
 export const useGroupPings = (id: number) => useQuery({ queryKey: qk.pings(id), queryFn: () => api.getGroupPings(id), enabled: id > 0 })
 export const useCollection = (id: number) =>
   useQuery({ queryKey: qk.collection(id), queryFn: () => api.getCollection(id), enabled: id > 0 })
-export const useMissionToday = (enabled = true) => useQuery({ queryKey: qk.mission, queryFn: api.getMissionToday, enabled })
+export const useMissionToday = (enabled = true) =>
+  useQuery({
+    queryKey: qk.mission,
+    queryFn: async () => {
+      const res = await api.getMissionToday()
+      writeCache('mission', res)
+      return res
+    },
+    enabled,
+    // 날짜가 지난 캐시는 쓰지 않는다
+    initialData: () => {
+      const cached = readCache<MissionToday>('mission')
+      return cached && cached.date === readCache<{ today: string }>('me')?.today ? cached : undefined
+    },
+    initialDataUpdatedAt: 0,
+  })
 export const useHelpCard = (enabled = true) => useQuery({ queryKey: qk.helpCard, queryFn: api.getHelpCard, enabled })
 export const useMoods = (from: string, to: string, enabled = true) =>
   useQuery({ queryKey: qk.moods(from, to), queryFn: () => api.getMoods(from, to), enabled: enabled && !!from })

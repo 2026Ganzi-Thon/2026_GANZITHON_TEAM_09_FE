@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { Link, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useCheckCurrent, useMe } from '../api/queries'
 import { TabBar } from '../components/layout/TabBar'
 import { Loading } from '../components/ui/Loading'
@@ -8,6 +8,7 @@ import { CheckinSheet } from '../features/checkin/CheckinSheet'
 import { MoodSheet } from '../features/mood/MoodSheet'
 import { isMoodPromptDue } from '../features/selectors'
 import { entryPath } from './entry'
+import helpLink from './OnboardingHelpLink.module.css'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -30,7 +31,12 @@ export function OnboardingLayout() {
   return (
     <>
       <ScrollToTop />
-      <Outlet />
+      <Link to="/help" className={helpLink.link}>
+        도움받기
+      </Link>
+      <div className={helpLink.screen}>
+        <Outlet />
+      </div>
     </>
   )
 }
@@ -56,7 +62,8 @@ export function TabLayout() {
   const me = useMe()
   const device = useDevice()
   const { pathname } = useLocation()
-  const isHelp = pathname === '/help' || pathname.startsWith('/help/')
+  // 도움받기(HELP-01)와 계정 관리(시작 화면에서 저장된 계정으로 돌아가기)는 계정 없이도 열린다. 기분·점검 팝업도 띄우지 않는다
+  const isHelp = pathname === '/help' || pathname.startsWith('/help/') || pathname === '/accounts'
   const ready = !!me.data && device.onboarded
   const popups = useAppPopups(isHelp)
 

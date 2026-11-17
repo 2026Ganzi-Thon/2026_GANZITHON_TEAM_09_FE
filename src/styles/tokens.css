@@ -45,8 +45,13 @@
   --radius-card: 18px;
   --radius-sheet: 28px;
 
-  --gutter: 20px;
-  --frame-max: 430px;
+  /*
+   * 좌우 여백: 393(기준 기기)에서 20px, 320에서 16px, 440(Pro Max)에서 22px로 화면 폭에 따라.
+   * 앱 너비 최대값: 가장 큰 아이폰(16·17 Pro Max 440pt)까지는 휴대폰 화면 그대로, 그보다 넓으면 PC 프레임
+   * (AppFrame.module.css의 미디어 쿼리 440/441px과 함께 바꾼다)
+   */
+  --gutter: clamp(16px, 5.1vw, 22px);
+  --frame-max: 440px;
   --tabbar-height: 68px;
 
   --safe-top: env(safe-area-inset-top, 0px);

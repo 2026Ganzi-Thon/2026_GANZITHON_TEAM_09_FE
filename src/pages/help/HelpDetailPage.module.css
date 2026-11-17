@@ -79,3 +79,41 @@
   color: var(--color-mute);
   text-align: center;
 }
+
+/* Figma 27 태그 */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: -4px;
+}
+
+.tags li {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--color-sky-soft);
+  color: var(--color-navy);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.why {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px dashed var(--color-line);
+}
+
+.why h2 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-navy);
+}
+
+.why p {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--color-ink);
+}

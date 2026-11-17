@@ -142,7 +142,9 @@ describe('도움받기 필터·순서 (HELP)', () => {
     item('line-1388', 'CRISIS_24H', { maxAge: 24 }),
     item('line-120', 'CRISIS_24H', { sido: ['서울특별시'] }),
     item('seoul-youth-mind', 'COUNSELING', { sido: ['서울특별시'], minAge: 19, maxAge: 39 }),
-    item('mental-center', 'COUNSELING'),
+    { ...item('mental-center', 'COUNSELING'), name: '정신건강복지센터', kind: 'CENTER_FINDER' as const },
+    { ...item('center-마포구', 'COUNSELING', { sido: ['서울특별시'], sigungu: ['마포구'] }), name: '마포구 정신건강복지센터', kind: 'LOCAL_CENTER' as const },
+    { ...item('center-강남구', 'COUNSELING', { sido: ['서울특별시'], sigungu: ['강남구'] }), kind: 'LOCAL_CENTER' as const },
     item('voucher', 'COUNSELING', { minAge: 19 }),
     item('school-counsel', 'COUNSELING', { jobs: ['STUDENT'] }),
     item('job-mind', 'COUNSELING', { jobs: ['JOB_SEEKER'], minAge: 18, maxAge: 64 }),
@@ -159,8 +161,14 @@ describe('도움받기 필터·순서 (HELP)', () => {
   it('서울 마포구 26세 대학생 (시연 인물)', () => {
     const l = helpListFor(items, { today, profile: { birthDate: '2000-05-14', sido: '서울특별시', sigungu: '마포구', job: 'STUDENT' } })
     expect(ids(l.CRISIS_24H)).toEqual(['line-109', 'line-120'])
-    expect(ids(l.COUNSELING)).toEqual(['seoul-youth-mind', 'mental-center', 'voucher', 'school-counsel'])
+    // 구를 고르면 '센터 찾기' 대신 그 구 센터만
+    expect(ids(l.COUNSELING)).toEqual(['seoul-youth-mind', 'center-마포구', 'voucher', 'school-counsel'])
     expect(l.COUNSELING[1].name).toBe('마포구 정신건강복지센터')
+  })
+  it('서울 밖에서 구를 고르면 그 이름으로 센터 찾기, 구 센터 카드는 숨김', () => {
+    const l = helpListFor(items, { today, profile: { sido: '부산광역시', sigungu: '해운대구' } })
+    expect(ids(l.COUNSELING)).not.toContain('center-마포구')
+    expect(l.COUNSELING.find((x) => x.id === 'mental-center')?.name).toBe('해운대구 정신건강복지센터 찾기')
   })
   it('순서 규칙: 외로움 3일(서울) → 120·마음편의점, 점검 기준 이상 → 센터·바우처·청년·학교, 구직 중 → 심리안정', () => {
     const lonely = helpListFor(items, { today, profile: { sido: '서울특별시' }, signals: { lonely3Days: true } })

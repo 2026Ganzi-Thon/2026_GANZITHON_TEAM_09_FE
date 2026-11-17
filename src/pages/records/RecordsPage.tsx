@@ -1,17 +1,18 @@
-import { useQueries } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { api } from '../../api'
-import { qk, useCheckCurrent, useGroups, useMe, useMoods, useRecords } from '../../api/queries'
+import { useCheckCurrent, useGroups, useMe, useMoods, useRecords } from '../../api/queries'
 import { Character } from '../../components/character/Character'
 import { Card, EmptyState, Page, PageHeader } from '../../components/layout/Page'
 import { HelpCard } from '../../components/ui/HelpCard'
-import { sizeUnit } from '../../data/missions'
+import { LoadError, Loading } from '../../components/ui/Loading'
+import { recordSizeUnit } from '../../data/missions'
 import { moodById } from '../../data/moods'
+import { useMemories } from '../../device/memories'
 import { useDevice } from '../../device/store'
+import { characterNicknameOf } from '../../features/character/nickname'
 import { CheckinSheet } from '../../features/checkin/CheckinSheet'
 import { nextCheckDay } from '../../features/checkin/checkinRules'
-import { addDays, formatMonthDay, weekStartOf } from '../../features/date'
+import { addDays, formatMonthDay, weekLabel, weekStartOf } from '../../features/date'
 import { displayStage, stageNameOf, variantOf } from '../../features/selectors'
 import styles from './records.module.css'
 
@@ -26,23 +27,22 @@ export function RecordsPage() {
   const [weekOffset, setWeekOffset] = useState(0)
   const [checkinOpen, setCheckinOpen] = useState(false)
 
-  const weekStart = day ? addDays(weekStartOf(day), weekOffset * 7) : ''
+  const thisWeekStart = day ? weekStartOf(day) : ''
+  const weekStart = day ? addDays(thisWeekStart, weekOffset * 7) : ''
   const weekDays = WEEK_LABELS.map((_, i) => (weekStart ? addDays(weekStart, i) : ''))
   const month = day.slice(0, 7)
   const moods = useMoods(weekStart, weekDays[6], consent && !!weekStart)
   const records = useRecords(month)
   const groups = useGroups()
   const check = useCheckCurrent(consent)
-  const collections = useQueries({
-    queries: (groups.data?.groups ?? []).map((g) => ({ queryKey: qk.collection(g.groupId), queryFn: () => api.getCollection(g.groupId) })),
-  })
+  const memories = useMemories()
 
   const moodOf = (d: string) => moods.data?.moods.find((x) => x.date === d)?.mood
   const missions = records.data?.missions ?? []
+  const memoryDays = new Set(memories.map((m) => m.date))
+  // '내가 남긴 핑'은 아직 서버 조회 API가 없어 이 기기에서 보낸 날을 센다 (백엔드 요청 중, #10)
   const monthPings = device.pingDays.filter((d) => d.startsWith(month)).length
-  const done = (groups.data?.groups ?? []).flatMap((g, i) =>
-    (collections[i]?.data?.characters ?? []).map((c) => ({ ...c, groupName: g.name, groupId: g.groupId })),
-  )
+  // 내 기록에는 키우는 중인 캐릭터만 (다 키운 캐릭터는 도감 전체 보기에서, #18)
   const growing = groups.data?.groups ?? []
   const canCheckNow = consent && !!check.data?.due
   const nextDay = day ? nextCheckDay(check.data?.done || check.data?.dismissed ? addDays(day, 1) : day) : ''
@@ -53,7 +53,7 @@ export function RecordsPage() {
 
       <Card>
         <div className={styles.cardHead}>
-          <h2>{weekOffset === 0 ? '이번 주 기분' : `${formatMonthDay(weekStart)} 주 기분`}</h2>
+          <h2>{weekStart ? `${weekLabel(weekStart, thisWeekStart)} 기분` : '이번 주 기분'}</h2>
           <span>나만 봐요</span>
         </div>
         {consent ? (
@@ -87,71 +87,81 @@ export function RecordsPage() {
             </div>
           </>
         ) : (
-          <p className={styles.muted}>기분 기록에 동의하면 여기에 흐름이 보여요. 마이 › 개인정보에서 바꿀 수 있어요.</p>
+          <p className={styles.muted}>기분 기록에 동의하면 여기에 흐름이 보여요. 마이 › 내 데이터에서 바꿀 수 있어요.</p>
         )}
       </Card>
 
+      {/* 불러오는 중에는 0 대신 자리만 (#추가 오류 2) */}
       <div className={styles.stats}>
         <div className={styles.stat}>
-          <strong>{missions.length}회</strong>
-          <span>이번 달 미션</span>
+          <strong>{records.isPending ? '–' : `${missions.length}회`}</strong>
+          <span>이번 달 내 미션</span>
         </div>
         <div className={styles.stat}>
           <strong>{monthPings}번</strong>
-          <span>남긴 핑</span>
+          <span>이번 달 내가 남긴 핑 · 이 기기 기준</span>
         </div>
       </div>
 
       <Card>
         <div className={styles.cardHead}>
-          <h2>캐릭터 도감</h2>
+          <h2>키우는 캐릭터</h2>
           <Link to="/collection" className={styles.more}>
-            다 키운 {done.length}마리 · 전체 보기 ›
+            도감 전체 보기 ›
           </Link>
         </div>
-        <div className={styles.dex}>
-          {done.map((c) => (
-            <Link key={c.characterId} to={`/collection/${c.groupId}/${c.characterId}`} className={styles.dexItem}>
-              <Character stage={5} variant={variantOf(c.kind)} size={64} title={`${c.groupName}에서 다 키운 캐릭터`} />
-              <span>
-                {c.groupName} · {Number(c.completedOn.slice(5, 7))}월
-              </span>
-            </Link>
-          ))}
-          {growing.map((g) => (
-            <Link key={g.groupId} to={`/collection/${g.groupId}/${g.character.characterId ?? 'current'}`} className={styles.dexItem}>
-              <Character stage={displayStage(g.character)} variant={variantOf(g.character.kind)} size={64} title={`${g.name}에서 키우는 중`} />
-              <span>
-                키우는 중
-                <br />
-                {stageNameOf(g.character)} · {Math.min(displayStage(g.character), 4)}단계
-              </span>
-            </Link>
-          ))}
-        </div>
-        {done.length === 0 && growing.length === 0 ? (
-          <EmptyState title="아직 키운 캐릭터가 없어요">
+        {groups.isPending ? (
+          <Loading />
+        ) : groups.isError ? (
+          <LoadError error={groups.error} onRetry={() => groups.refetch()} />
+        ) : growing.length === 0 ? (
+          <EmptyState title="아직 키우는 캐릭터가 없어요">
             <p>그룹에서 함께 미션하면 캐릭터가 자라요.</p>
           </EmptyState>
-        ) : null}
+        ) : (
+          <div className={styles.dex}>
+            {growing.map((g) => {
+              const nickname = characterNicknameOf(device, g.groupId, g.character.characterId)
+              return (
+                <Link key={g.groupId} to={`/collection/${g.groupId}/${g.character.characterId ?? 'current'}`} className={styles.dexItem}>
+                  <Character stage={displayStage(g.character)} variant={variantOf(g.character.kind)} size={64} title={`${g.name}에서 키우는 중`} />
+                  <span>
+                    {nickname ?? g.name}
+                    <br />
+                    {stageNameOf(g.character)} · {Math.min(displayStage(g.character), 4)}단계
+                  </span>
+                </Link>
+              )
+            })}
+          </div>
+        )}
       </Card>
 
       <Card>
         <div className={styles.cardHead}>
           <h2>참여한 미션</h2>
-          <span>이번 달 {missions.length}개</span>
+          <span>{records.isPending ? '' : `이번 달 ${missions.length}개`}</span>
         </div>
-        {missions.length === 0 ? (
+        {records.isPending ? (
+          <Loading />
+        ) : records.isError ? (
+          <LoadError error={records.error} onRetry={() => records.refetch()} />
+        ) : missions.length === 0 ? (
           <p className={styles.muted}>하고 싶은 날 미션을 해 보세요. 빠진 날은 표시하지 않아요.</p>
         ) : (
           <ul className={styles.missions}>
             {missions.map((m) => (
               <li key={m.date}>
-                {device.missionPhotos[m.date] ? <img src={device.missionPhotos[m.date]} alt="" className={styles.thumb} /> : null}
                 <span className={styles.missionName}>
                   {m.text} · {m.size}
-                  {sizeUnit({ sizeType: m.sizeType, category: m.category, topicId: 0 })}
+                  {recordSizeUnit(m)}
                 </span>
+                {/* 사진은 추억 기록에서 본다 — 여기서는 기록이 있다는 표시만 (#9 중복 노출 줄이기) */}
+                {memoryDays.has(m.date) ? (
+                  <Link to={`/my/memories/${m.date}`} className={styles.memoryLink}>
+                    기록 ›
+                  </Link>
+                ) : null}
                 <span className={styles.muted}>{formatMonthDay(m.date)}</span>
               </li>
             ))}

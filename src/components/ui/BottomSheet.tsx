@@ -16,21 +16,30 @@ interface BottomSheetProps {
 export function BottomSheet({ open, onClose, label, children, dismissible = true }: BottomSheetProps) {
   const ref = useRef<HTMLDivElement>(null)
   const titleId = useId()
+  // 닫기 함수는 화면이 다시 그려질 때마다 새로 만들어진다. 효과의 의존값에 넣으면 글자를 칠 때마다
+  // 효과가 다시 돌아 시트로 포커스를 옮겨 입력이 끊긴다 → 최신 값을 ref로만 읽는다
+  const onCloseRef = useRef(onClose)
+  const dismissibleRef = useRef(dismissible)
+  useEffect(() => {
+    onCloseRef.current = onClose
+    dismissibleRef.current = dismissible
+  })
 
+  // 열릴 때 한 번만: 스크롤 잠금, 시트로 포커스, Esc로 닫기
   useEffect(() => {
     if (!open) return
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     ref.current?.focus()
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && dismissible) onClose?.()
+      if (e.key === 'Escape' && dismissibleRef.current) onCloseRef.current?.()
     }
     window.addEventListener('keydown', onKey)
     return () => {
       document.body.style.overflow = prevOverflow
       window.removeEventListener('keydown', onKey)
     }
-  }, [open, dismissible, onClose])
+  }, [open])
 
   if (!open) return null
 

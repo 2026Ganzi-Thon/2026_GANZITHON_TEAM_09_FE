@@ -30,6 +30,43 @@ describe('계정', () => {
   it('GET /me는 서버 기준 오늘(KST)을 준다', async () => {
     expect((await api.getMe()).today).toBe('2026-11-16')
   })
+  it('GET /me isDemo: 일반 계정 false, 시연 시드 계정 true', async () => {
+    expect((await api.getMe()).isDemo).toBe(false)
+    seedMockDemo()
+    expect((await api.getMe()).isDemo).toBe(true)
+  })
+})
+
+describe('시연 시드 (MIS-04)', () => {
+  it('지난 미션 크기: 10분을 고른 횟수형은 2번, 시간형은 10분 (기분이 낮으면 한 단계 작게)', async () => {
+    seedMockDemo()
+    const { missions } = await api.getMyRecords('2026-11')
+    expect(missions.length).toBeGreaterThan(0)
+    for (const m of missions) {
+      if (m.sizeType === 'COUNT') expect([1, 2]).toContain(m.size)
+      else expect([5, 10]).toContain(m.size)
+    }
+    expect(missions.some((m) => m.sizeType === 'COUNT')).toBe(true)
+  })
+})
+
+describe('미션 고른 값 (백엔드 회신 2026-11-16)', () => {
+  it('NOT_STARTED면 minutes·place·size가 null, 시작하면 고른 값, 완료 뒤에도 남는다', async () => {
+    const before = await api.getMissionToday()
+    expect([before.status, before.minutes, before.place, before.size]).toEqual(['NOT_STARTED', null, null, null])
+    const started = await api.startMission({ minutes: 20, place: 'INDOOR', size: 15 })
+    expect([started.status, started.minutes, started.place, started.size]).toEqual(['STARTED', 20, 'INDOOR', 15])
+    await api.completeMission()
+    const done = await api.getMissionToday()
+    expect([done.status, done.minutes, done.place, done.size]).toEqual(['COMPLETED', 20, 'INDOOR', 15])
+  })
+  it('다시 시작하면 고른 값과 startedAt을 새로 쓴다', async () => {
+    const first = await api.startMission({ minutes: 5, place: 'OUTDOOR', size: 5 })
+    await new Promise((r) => setTimeout(r, 5))
+    const again = await api.startMission({ minutes: 10, place: 'INDOOR', size: 10 })
+    expect([again.minutes, again.place, again.size]).toEqual([10, 'INDOOR', 10])
+    expect(Date.parse(again.startedAt!)).toBeGreaterThan(Date.parse(first.startedAt!))
+  })
 })
 
 describe('기분', () => {

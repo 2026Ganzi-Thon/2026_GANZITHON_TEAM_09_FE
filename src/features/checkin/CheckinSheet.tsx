@@ -21,6 +21,8 @@ export function CheckinSheet({ open, onClose }: { open: boolean; onClose?: () =>
   const total = CHECKIN_QUESTIONS.length
   const question = CHECKIN_QUESTIONS[step]
   const current = answers[step]
+  // 진행률은 '답한 문항 수', 위치는 '몇 번째 문항'으로 따로 보여준다 (문항 위치로 바를 채우던 오류 수정)
+  const answeredCount = answers.filter((a) => a !== undefined).length
 
   const reset = () => {
     setStep(0)
@@ -59,9 +61,9 @@ export function CheckinSheet({ open, onClose }: { open: boolean; onClose?: () =>
         </button>
       </div>
       <div className={styles.progressRow}>
-        <ProgressBar value={step + 1} max={total} label="점검 진행" />
+        <ProgressBar value={answeredCount} max={total} label={`${total}문항 중 ${answeredCount}문항 답함`} />
         <span className={styles.step}>
-          {step + 1} / {total}
+          {step + 1}번째 문항 / {total}
         </span>
       </div>
       <p className={styles.question} id="checkin-q">

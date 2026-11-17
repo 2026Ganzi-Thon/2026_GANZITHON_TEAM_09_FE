@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import type { Job } from '../api/types'
+import { hasIndexedDb, idb } from './idb'
 
 /**
  * 선택 정보 3가지(생년월일·거주 지역·지금 하는 일)는 기기에만 저장한다 (architecture 5절).
@@ -12,36 +13,15 @@ export interface DeviceProfile {
   job?: Job
 }
 
-const DB_NAME = 'haengunping-device'
-const STORE = 'kv'
 const KEY = 'profile'
 
 let profile: DeviceProfile = {}
 const listeners = new Set<() => void>()
 
-function openDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1)
-    req.onupgradeneeded = () => req.result.createObjectStore(STORE)
-    req.onsuccess = () => resolve(req.result)
-    req.onerror = () => reject(req.error)
-  })
-}
-
-async function idb<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest): Promise<T> {
-  const db = await openDb()
-  return new Promise<T>((resolve, reject) => {
-    const tx = db.transaction(STORE, mode)
-    const req = fn(tx.objectStore(STORE))
-    req.onsuccess = () => resolve(req.result as T)
-    req.onerror = () => reject(req.error)
-  })
-}
-
 /** 앱 시작 때 한 번 불러 둔다 (렌더 전에 await) */
 export async function loadDeviceProfile() {
   try {
-    if (typeof indexedDB === 'undefined') return
+    if (!hasIndexedDb()) return
     profile = ((await idb<DeviceProfile | undefined>('readonly', (s) => s.get(KEY))) ?? {}) as DeviceProfile
   } catch {
     profile = {}

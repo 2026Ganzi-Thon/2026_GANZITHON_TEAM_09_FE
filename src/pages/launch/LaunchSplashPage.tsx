@@ -6,8 +6,8 @@ import { useDevice } from '../../device/store'
 import { entryPath } from '../../app/entry'
 import styles from './launch.module.css'
 
-/** 브랜드와 캐릭터를 보여주는 최소 시간 (계정 확인이 더 오래 걸리면 그만큼 더 보인다) */
-const MIN_SHOW_MS = 1100
+/** 브랜드와 캐릭터를 보여주는 최소 시간 약 2초 (계정 확인이 더 오래 걸리면 그만큼 더 보인다) */
+const MIN_SHOW_MS = 2000
 
 /**
  * 앱 실행 스플래시 (`/`, PWA start_url).

@@ -1,4 +1,5 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useDismissHelpCard, useGroups, useHelpCard, useLeaveOnlineQueue, useMe, useMissionToday } from '../../api/queries'
 import { Character } from '../../components/character/Character'
 import { GroupCard } from '../../components/group/GroupCard'
@@ -8,6 +9,10 @@ import { HelpCard } from '../../components/ui/HelpCard'
 import { LoadError, Loading } from '../../components/ui/Loading'
 import { useDevice } from '../../device/store'
 import { isMoodPromptDue } from '../../features/selectors'
+import { useFinishMission } from '../../features/mission/useFinishMission'
+import { useOnline } from '../../hooks/useOnline'
+import { useNow } from '../../hooks/useNow'
+import type { MissionToday } from '../../api/types'
 import styles from './groups.module.css'
 
 const MAX_GROUPS = 3
@@ -26,10 +31,22 @@ export function GroupsHomePage() {
   const leaveQueue = useLeaveOnlineQueue()
 
   const list = groups.data?.groups ?? []
+  // S26: 다 자란 캐릭터가 있으면 그 그룹을 처음 볼 때 완성 화면을 한 번 보여준다
+  const pendingDone = Object.keys(device.pendingCompletions).map(Number).find((id) => list.some((g) => g.groupId === id))
   const waiting = !!groups.data?.queue.waiting
+  // 대기 중이면 배정됐는지 주기적으로 확인 (실서버는 배정되면 웹 푸시도 보낸다)
+  const refetchGroups = groups.refetch
+  useEffect(() => {
+    if (!waiting) return
+    const id = window.setInterval(() => void refetchGroups(), 10_000)
+    return () => window.clearInterval(id)
+  }, [waiting, refetchGroups])
   const slots = list.length + (waiting ? 1 : 0)
   const canAdd = slots < MAX_GROUPS
   const m = mission.data
+  const online = useOnline()
+
+  if (pendingDone !== undefined && !moodDue) return <Navigate to={`/groups/${pendingDone}/completed`} />
 
   return (
     <Page withTabBar gap={14}>
@@ -64,20 +81,13 @@ export function GroupsHomePage() {
         />
       ) : null}
 
-      {m ? (
-        <Link to="/mission" className={styles.missionCard}>
-          <span className={styles.missionText}>
-            <span className={styles.eyebrow}>
-              오늘의 내 미션{m.status === 'COMPLETED' ? ' · 완료' : list.length > 1 ? ` · 내 그룹 ${list.length}곳에 함께 반영돼요` : ''}
-            </span>
-            <span className={styles.missionTitle}>{(m.place ?? m.defaults.place) === 'INDOOR' ? m.topic.indoorText : m.topic.outdoorText}</span>
-            <span className={styles.missionSub}>
-              {m.status === 'COMPLETED' ? '오늘은 이 정도면 충분해요' : m.status === 'STARTED' ? '진행 중이에요' : '크기와 밖/안은 내가 골라요'}
-            </span>
-          </span>
-          <span className={styles.missionCta}>{m.status === 'COMPLETED' ? '완료' : m.status === 'STARTED' ? '이어하기' : '시작'}</span>
-        </Link>
+      {!online ? (
+        <p className={styles.offline} role="status">
+          인터넷 연결이 끊겼어요 · 마지막으로 받은 내용을 보여 드려요. 연결되면 갱신돼요
+        </p>
       ) : null}
+
+      {m ? <HomeMissionCard mission={m} groupCount={list.length} /> : null}
 
       {waiting ? (
         <section className={styles.waitCard}>
@@ -107,5 +117,50 @@ export function GroupsHomePage() {
         </>
       )}
     </Page>
+  )
+}
+
+const pad = (n: number) => String(n).padStart(2, '0')
+
+/** 홈의 오늘 미션 카드. 진행 중이면 지난 시간과 '다 했어요'를 바로 보여준다 (S20 · MIS-07) */
+function HomeMissionCard({ mission: m, groupCount }: { mission: MissionToday; groupCount: number }) {
+  const device = useDevice()
+  const online = useOnline()
+  const { finish, isPending } = useFinishMission()
+  const started = m.status === 'STARTED'
+  const now = useNow(started ? 1000 : 60_000)
+  const title = (m.place ?? m.defaults.place) === 'INDOOR' ? m.topic.indoorText : m.topic.outdoorText
+  const eyebrow = `오늘의 내 미션${m.status === 'COMPLETED' ? ' · 완료' : groupCount > 1 ? ` · 내 그룹 ${groupCount}곳에 함께 반영돼요` : ''}`
+
+  if (started) {
+    const choice = device.missionChoice?.day === m.date ? device.missionChoice : undefined
+    const startedAt = choice?.startedAtLocal ?? (m.startedAt ? Date.parse(m.startedAt) : now)
+    const sec = Math.max(0, Math.floor((now - startedAt) / 1000))
+    const elapsed = sec >= 3600 ? `${Math.floor(sec / 3600)}:${pad(Math.floor((sec % 3600) / 60))}:${pad(sec % 60)}` : `${pad(Math.floor(sec / 60))}:${pad(sec % 60)}`
+    return (
+      <section className={styles.missionCard}>
+        <Link to="/mission/timer" className={styles.missionText}>
+          <span className={styles.eyebrow}>{eyebrow}</span>
+          <span className={styles.missionTitle}>{title}</span>
+          <span className={styles.missionSub}>
+            진행 중 · <span className={styles.elapsed}>{elapsed}</span> 지났어요 ›
+          </span>
+        </Link>
+        <button type="button" className={styles.missionCta} disabled={!online || isPending} onClick={() => void finish(m.date)}>
+          다 했어요
+        </button>
+      </section>
+    )
+  }
+
+  return (
+    <Link to="/mission" className={styles.missionCard}>
+      <span className={styles.missionText}>
+        <span className={styles.eyebrow}>{eyebrow}</span>
+        <span className={styles.missionTitle}>{title}</span>
+        <span className={styles.missionSub}>{m.status === 'COMPLETED' ? '오늘은 이 정도면 충분해요' : '기분을 고른 뒤 정해져요 · 크기와 밖/안은 내가 골라요'}</span>
+      </span>
+      <span className={styles.missionCta}>{m.status === 'COMPLETED' ? '완료' : '시작'}</span>
+    </Link>
   )
 }

@@ -25,12 +25,8 @@ export function ProfileInfoPage() {
 
   return (
     <Page gap={18}>
-      <PageHeader title="" back="/onboarding/nickname" />
-      <p className={styles.step}>2 / 4</p>
-      <div>
-        <h1 className={styles.lead}>나에게 맞는 도움을 찾아 드릴게요</h1>
-        <p className={styles.desc}>모두 선택이에요. 이 기기에만 저장되고, 입력하지 않으면 전체 목록을 보여 드려요.</p>
-      </div>
+      <PageHeader title="맞춤 도움 정보" back="/onboarding/nickname" />
+      <p className={styles.desc}>입력하면 나에게 맞는 복지 지원서비스를 먼저 보여줘요. 이 기기에만 저장되고, 모두 선택이에요.</p>
       <ProfileFields value={draft} onChange={setDraft} maxDate={me.data?.today ?? dayKeyOf(now)} />
       <Button onClick={save}>다음</Button>
       <Button
@@ -40,7 +36,7 @@ export function ProfileInfoPage() {
           navigate('/onboarding/consent')
         }}
       >
-        나중에 할게요
+        건너뛰기
       </Button>
     </Page>
   )

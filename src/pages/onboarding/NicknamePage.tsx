@@ -36,13 +36,8 @@ export function NicknamePage() {
 
   return (
     <Page gap={20}>
-      <PageHeader title="" back={me.data ? undefined : '/onboarding/install'} />
-      <p className={styles.step}>1 / 4</p>
-      <h1 className={styles.lead}>어떻게 불러 드릴까요?</h1>
-      <p className={styles.infoCard}>
-        <b>로그인 없이 시작해요</b>
-        이 기기에 계정이 만들어져요. 브라우저 데이터를 지우면 계정이 사라질 수 있어요.
-      </p>
+      <PageHeader title="닉네임" back={me.data ? '/welcome' : '/onboarding/install'} />
+      <p className={styles.desc}>친구 그룹에서 보이는 이름이에요. 온라인 그룹에서는 그룹마다 랜덤 별칭이 대신 보여요.</p>
       <form onSubmit={submit} style={{ display: 'contents' }}>
         <TextField
           label="닉네임"
@@ -52,12 +47,13 @@ export function NicknamePage() {
           maxLength={10}
           placeholder="예: 소은"
           autoComplete="nickname"
-          hint="친구 그룹에서만 보여요. 온라인 그룹에서는 랜덤 별칭을 써요."
+          suffix={`${nickname.trim().length} / 10`}
           error={(touched ? error : null) ?? serverError}
         />
-        <span className={styles.counter} aria-hidden>
-          {nickname.trim().length} / 10
-        </span>
+        <p className={styles.infoCard}>
+          <b>로그인 없이 시작해요</b>
+          이 기기에 계정이 만들어져요. 브라우저 데이터를 지우면 계정이 사라질 수 있어요.
+        </p>
         <Spacer />
         <Button type="submit" disabled={touched && !!error} loading={create.isPending || patch.isPending}>
           다음

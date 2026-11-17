@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { errorMessage } from '../../api/errors'
 import { useGroups, useMissionToday, useSendPing } from '../../api/queries'
 import type { PingEmoji } from '../../api/types'
@@ -17,28 +17,10 @@ import { formatGrowth, stageOf, STAGE_NAMES, withEuro } from '../../features/cha
 import { missionText } from '../../features/mission/missionText'
 import { progressLabel, variantOf } from '../../features/selectors'
 import type { CharacterStage } from '../../types/domain'
+import { useMemory } from '../../device/memories'
+import { isWritingMission } from '../../features/memory/format'
+import type { MemoryEditState } from '../memories/MemoryEditPage'
 import styles from './mission.module.css'
-
-/** 사진은 개인 기록용: 작게 줄여 기기에만 저장 */
-async function shrinkImage(file: File): Promise<string> {
-  const url = URL.createObjectURL(file)
-  try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const i = new Image()
-      i.onload = () => resolve(i)
-      i.onerror = reject
-      i.src = url
-    })
-    const scale = Math.min(1, 480 / Math.max(img.width, img.height))
-    const canvas = document.createElement('canvas')
-    canvas.width = Math.round(img.width * scale)
-    canvas.height = Math.round(img.height * scale)
-    canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
-    return canvas.toDataURL('image/jpeg', 0.75)
-  } finally {
-    URL.revokeObjectURL(url)
-  }
-}
 
 /** S23 완료 · 이모티콘 핑 (Figma 6). 핑은 선택이고, 한 번 보내면 내 모든 그룹에 간다 (PING-02) */
 export function MissionDonePage() {
@@ -48,8 +30,10 @@ export function MissionDonePage() {
   const mission = useMissionToday()
   const groups = useGroups()
   const send = useSendPing()
-  const [ping, setPing] = useState<PingEmoji | null>(null)
-  const fileRef = useRef<HTMLInputElement>(null)
+  // 추억 기록을 쓰고 돌아와도 고른 핑이 남아 있게 (기록 화면이 돌려준다)
+  const returned = useLocation().state as { ping?: PingEmoji | null } | null
+  const [ping, setPing] = useState<PingEmoji | null>(returned?.ping ?? null)
+  const memory = useMemory(mission.data?.date)
 
   if (mission.isPending || groups.isPending) return <Loading />
   const m = mission.data
@@ -65,8 +49,40 @@ export function MissionDonePage() {
   const grew = !!result && result.stageAfter > result.stageBefore
   const stageChangedGroups = (completion?.groups ?? []).filter((g) => g.stageAfter > g.stageBefore).length
   const pinged = device.pingDays.includes(m.date)
-  const photo = device.missionPhotos[m.date]
   const place = m.place ?? m.defaults.place
+  const text = missionText(m, place)
+  // '오늘 좋았던 일 하나 적기' 같은 미션은 적을 칸을 핑보다 먼저 보여준다 (#7)
+  const writing = isWritingMission(text)
+  // 기록을 저장하거나 취소하면 이 완료 화면으로 돌아와 핑을 이어서 남긴다
+  const openRecord = () =>
+    navigate(`/record/${m.date}`, { state: { missionText: text, writing, returnTo: '/mission/done', returnState: { ping } } satisfies MemoryEditState })
+
+  const recordCard = (
+    <section className={`${styles.recordCard} ${writing && !memory ? styles.recordCardStrong : ''}`}>
+      {memory ? (
+        <>
+          <Link to={`/my/memories/${m.date}`} className={styles.recordSaved}>
+            {memory.photo ? <img src={memory.photo} alt="오늘 남긴 사진" className={styles.photo} /> : null}
+            <span className={styles.recordSavedText}>
+              <b>추억 기록에 남겼어요</b>
+              <span>{memory.memo ?? '사진을 남겼어요'}</span>
+            </span>
+          </Link>
+          <button type="button" className={styles.photoButton} onClick={openRecord}>
+            고치기
+          </button>
+        </>
+      ) : (
+        <>
+          <p className={styles.recordTitle}>{writing ? '오늘 좋았던 일을 한 줄로 적어 보세요' : '오늘을 사진이나 한 줄 메모로 남겨 볼까요?'}</p>
+          <p className={styles.recordSub}>선택 · 나만 봐요 · 이 기기에만 저장돼요</p>
+          <Button size="md" variant={writing ? 'primary' : 'secondary'} onClick={openRecord}>
+            {writing ? '좋았던 일 적기' : '사진·메모 남기기'}
+          </Button>
+        </>
+      )}
+    </section>
+  )
 
   const leave = () => navigate(main ? `/groups/${main.groupId}` : '/groups', { replace: true })
 
@@ -86,9 +102,14 @@ export function MissionDonePage() {
   return (
     <Page gap={14} className={styles.donePage}>
       <h1 className={styles.doneTitle}>다 했어요!</h1>
+      {/* Figma 6: "내 그룹 3곳에 반영됐어요 · 우리 셋" (뒤는 아래 성장 카드의 그룹) */}
       <p className={styles.doneSub}>
-        {missionText(m, place)} {m.size ?? ''}
-        {m.size ? sizeUnit(m.topic) : ''} · 내 그룹 {list.length}곳에 반영됐어요
+        {list.length > 1 ? `내 그룹 ${list.length}곳에 반영됐어요` : '내 그룹에 반영됐어요'}
+        {main ? ` · ${main.name}` : ''}
+      </p>
+      <p className={styles.others}>
+        {text} {m.size ?? ''}
+        {m.size ? sizeUnit(m.topic) : ''}
       </p>
 
       {main ? (
@@ -116,6 +137,8 @@ export function MissionDonePage() {
         </p>
       ) : null}
 
+      {writing ? recordCard : null}
+
       {pinged ? (
         <p className={styles.pingNote}>오늘 핑은 이미 남겼어요</p>
       ) : (
@@ -130,30 +153,7 @@ export function MissionDonePage() {
         </>
       )}
 
-      <div className={styles.photoRow}>
-        {photo ? <img src={photo} alt="오늘 미션 사진" className={styles.photo} /> : null}
-        <button type="button" className={styles.photoButton} onClick={() => fileRef.current?.click()}>
-          {photo ? '사진 바꾸기' : '사진 남기기 (선택 · 나만 봐요)'}
-        </button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          hidden
-          onChange={async (e) => {
-            const file = e.target.files?.[0]
-            if (!file) return
-            try {
-              const dataUrl = await shrinkImage(file)
-              updateDevice((d) => ({ missionPhotos: { ...d.missionPhotos, [m.date]: dataUrl } }))
-              toast('사진을 내 기록에 남겼어요')
-            } catch {
-              toast('사진을 불러오지 못했어요')
-            }
-          }}
-        />
-      </div>
+      {writing ? null : recordCard}
 
       <div className={styles.doneActions}>
         {pinged ? (

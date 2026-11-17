@@ -3,7 +3,7 @@ import { Character } from '../components/character/Character'
 import styles from './AppFrame.module.css'
 
 /**
- * 모바일 앱형 프레임: 최대 430px, PC에서는 가운데 정렬.
+ * 모바일 앱형 프레임: 최대 440px(가장 큰 아이폰), PC에서는 가운데 정렬.
  * 휴대폰을 가로로 돌리면 세로 안내를 띄운다 (가로 화면 미지원).
  */
 export function AppFrame({ children }: { children: ReactNode }) {

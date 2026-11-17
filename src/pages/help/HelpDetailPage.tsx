@@ -1,15 +1,21 @@
 import { Navigate, useParams } from 'react-router-dom'
-import { useHelpItems, useMe } from '../../api/queries'
+import { useHelpItems, useHelpSignals, useMe } from '../../api/queries'
 import { Page, PageHeader } from '../../components/layout/Page'
 import { LoadError, Loading } from '../../components/ui/Loading'
 import { useDeviceProfile } from '../../device/profile'
 import { useDevice } from '../../device/store'
-import { dayKeyOf, formatMonthDay } from '../../features/date'
-import { findHelpItem } from '../../features/help/helpFilter'
+import { dayKeyOf } from '../../features/date'
+import { boostReason, findHelpItem, helpTags, profileBasisLabel, profileIsEmpty, telHref } from '../../features/help/helpFilter'
+import { JOB_LABELS } from '../../features/profile/jobs'
 import { useNow } from '../../hooks/useNow'
 import styles from './HelpDetailPage.module.css'
 
-/** S41 도움받을 곳 상세 (/help/:serviceId). 계정 없이, 오프라인에서도 열린다. 이용 기록은 저장하지 않는다 */
+const GOV24 = (id: string) => `https://www.gov.kr/portal/rcvfvrSvc/dtlEx/${id}`
+
+/**
+ * S41 도움받을 곳 상세 (Figma 27): 제목에 사업 이름, 태그, 누가·무엇을·어떻게, 이 카드가 보이는 이유,
+ * 공식 페이지 버튼, 정보 기준일. 계정 없이, 오프라인에서도 열린다. 이용 기록은 저장하지 않는다.
+ */
 export function HelpDetailPage() {
   const { serviceId = '' } = useParams()
   const me = useMe()
@@ -17,60 +23,80 @@ export function HelpDetailPage() {
   const device = useDevice()
   const profile = useDeviceProfile()
   const items = useHelpItems()
+  const signals = useHelpSignals()
   const onboarded = !!me.data && device.onboarded
+  const today = me.data?.today ?? dayKeyOf(now)
 
   if (items.isPending) return <Loading />
   if (items.isError) return <LoadError error={items.error} onRetry={() => items.refetch()} />
-  const service = findHelpItem(items.data.items, serviceId, { profile, today: me.data?.today ?? dayKeyOf(now) })
+  const ctx = { profile, today, signals: signals.data }
+  const service = findHelpItem(items.data.items, serviceId, ctx)
   if (!service) return <Navigate to="/help" replace />
-  const is24h = service.section === 'CRISIS_24H'
+
+  // 연락처가 아직 없는 구 센터는 정부24 정신건강복지센터 안내로
+  const officialUrl = service.url ?? (service.sourceServiceId ? GOV24(service.sourceServiceId) : null)
+  const basis = profileBasisLabel(profile, today, (j) => JOB_LABELS[j])
+  const why = [
+    profileIsEmpty(profile) ? '입력한 정보가 없어서 모든 분께 보여 드리는 곳이에요.' : `${basis}로 입력했어요.`,
+    boostReason(service, ctx),
+  ]
+    .filter(Boolean)
+    .join(' ')
+  const baseDate = items.data.syncedAt ? dayKeyOf(Date.parse(items.data.syncedAt)).replace(/-/g, '.') : null
 
   return (
     <Page withTabBar={onboarded} gap={14}>
-      <PageHeader title="도움받을 곳" back backFallback="/help" />
-      <div className={styles.head}>
-        {is24h ? <span className={styles.badge}>24시간</span> : null}
-        <h2 className={styles.title}>{service.name}</h2>
-      </div>
+      <PageHeader title={service.name} back backFallback="/help" />
+      <ul className={styles.tags}>
+        {helpTags(service).map((t) => (
+          <li key={t}>{t}</li>
+        ))}
+      </ul>
       <dl className={styles.info}>
-        {service.target ? (
+        <div>
+          <dt>누가</dt>
+          <dd>{service.target ?? '누구나'}</dd>
+        </div>
+        {service.summary ? (
           <div>
-            <dt>대상</dt>
-            <dd>{service.target}</dd>
+            <dt>무엇을</dt>
+            <dd>{service.summary}</dd>
           </div>
         ) : null}
         {service.applyMethod ? (
           <div>
-            <dt>이용 방법</dt>
-            <dd>{service.applyMethod}</dd>
-          </div>
-        ) : null}
-        {service.deadline ? (
-          <div>
-            <dt>기한</dt>
-            <dd>{service.deadline}</dd>
+            <dt>어떻게</dt>
+            <dd>
+              {service.applyMethod}
+              {service.deadline ? ` · ${service.deadline}` : ''}
+            </dd>
           </div>
         ) : null}
         {service.address ? (
           <div>
-            <dt>주소</dt>
+            <dt>어디서</dt>
             <dd>{service.address}</dd>
           </div>
         ) : null}
       </dl>
       {service.note ? <p className={styles.note}>{service.note}</p> : null}
+      <section className={styles.why}>
+        <h2>이 카드가 보이는 이유</h2>
+        <p>{why}</p>
+      </section>
       {service.phone ? (
-        <a className={styles.call} href={`tel:${service.phone.replace(/-/g, '')}`}>
+        <a className={officialUrl ? styles.link : styles.call} href={telHref(service.phone)}>
           {service.phone} 전화하기
         </a>
       ) : null}
-      {service.url ? (
-        <a className={styles.link} href={service.url} target="_blank" rel="noopener noreferrer">
-          공식 페이지 열기 ↗
+      {officialUrl ? (
+        <a className={styles.call} href={officialUrl} target="_blank" rel="noopener noreferrer">
+          {service.url ? '공식 페이지에서 신청하기 ↗' : '연락처·위치 찾기 (정부24) ↗'}
         </a>
       ) : null}
       <p className={styles.basis}>
-        {items.data.syncedAt ? `공공서비스(혜택) 정보 · ${formatMonthDay(dayKeyOf(Date.parse(items.data.syncedAt)))} 기준. ` : ''}
+        {baseDate ? `정보 기준일 ${baseDate} · ` : ''}행정안전부 공공서비스(혜택) 정보
+        <br />
         신청 결과와 일정은 각 기관에서 확인해 주세요.
       </p>
     </Page>

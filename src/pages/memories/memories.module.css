@@ -1,0 +1,156 @@
+.note {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-mute);
+}
+
+/* 목록 */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+}
+
+.item:active {
+  background: var(--color-paper);
+}
+
+.thumb {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: var(--color-sky-soft);
+}
+
+.thumbMemo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-navy);
+}
+
+.itemText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.itemDate {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-navy);
+}
+
+.itemMission {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemMemo {
+  font-size: 12.5px;
+  color: var(--color-mute);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  flex-shrink: 0;
+  font-size: 20px;
+  color: var(--color-mute);
+}
+
+/* 상세 · 작성 */
+.eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-navy);
+}
+
+.mission {
+  font-family: var(--font-display);
+  font-size: 22px;
+  line-height: 1.35;
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+}
+
+.photo {
+  display: block;
+  width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+  border-radius: var(--radius-card);
+  background: var(--color-sky-soft);
+}
+
+.memo {
+  padding: 14px 16px;
+  border-radius: var(--radius-card);
+  background: var(--color-card);
+  border: 1px solid var(--color-line);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+}
+
+.pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 160px;
+  border-radius: var(--radius-card);
+  border: 1.5px dashed var(--color-line);
+  background: var(--color-card);
+  color: var(--color-navy);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.pick small {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-mute);
+}
+
+.photoActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sheetTitle {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 22px;
+}

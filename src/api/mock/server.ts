@@ -1,5 +1,6 @@
 import { CRISIS_LINES, HELP_SERVICES, type HelpService } from '../../data/helpServices'
 import { MISSION_TOPICS, topicSeedById } from '../../data/missions'
+import { SEOUL, SEOUL_GU } from '../../data/regions'
 import { dailyGrowth, stageOf } from '../../features/character/growth'
 import { CHECK_MESSAGES, evaluateCheck, isAboveThreshold, isCheckWindow, sectionsFor, validateAnswers } from '../../features/checkin/checkinRules'
 import { addDays, daysBetween, dayKeyOf, weekStartOf } from '../../features/date'
@@ -255,11 +256,30 @@ function missionToday(): MissionToday {
 const JOB_OF: Record<string, Job> = { student: 'STUDENT', worker: 'WORKER', jobseeker: 'JOB_SEEKER', other: 'OTHER' }
 const SECTION_OF = { crisis: 'CRISIS_24H', counsel: 'COUNSELING', visit: 'DROP_IN' } as const
 
+/**
+ * 서울 25개 구 정신건강복지센터 (LOCAL_CENTER). 구를 고른 사람에게 그 구 센터만 보인다.
+ * 전화번호·주소는 검증된 데이터가 오기 전까지 비워 두고, 상세에서 '센터 찾기'로 안내한다.
+ */
+const SEOUL_CENTERS: HelpItem[] = SEOUL_GU.map((gu) => ({
+  id: `center-${gu}`,
+  section: 'COUNSELING',
+  kind: 'LOCAL_CENTER',
+  name: `${gu} 정신건강복지센터`,
+  phone: null,
+  url: null,
+  summary: `${gu} 주민 누구나 · 무료 상담`,
+  applyMethod: '센터에 전화 또는 방문 (연락처는 센터 찾기에서 확인)',
+  rules: { sido: [SEOUL], sigungu: [gu] },
+  sourceServiceId: 'GMW000000140',
+  target: `${gu} 주민 누구나`,
+  note: null,
+}))
+
 function toHelpItem(x: HelpService): HelpItem {
   return {
     id: x.id,
     section: SECTION_OF[x.section],
-    kind: x.section === 'crisis' ? 'CHANNEL' : 'SERVICE',
+    kind: x.section === 'crisis' ? 'CHANNEL' : x.id === 'mental-center' ? 'CENTER_FINDER' : 'SERVICE',
     name: x.name,
     phone: x.phone ?? null,
     url: x.url ?? null,
@@ -275,6 +295,16 @@ function toHelpItem(x: HelpService): HelpItem {
     target: x.target,
     note: x.note ?? null,
   }
+}
+
+/** 목업: 빈자리가 있는 온라인 그룹에 배정 (4~5명 그룹에 나를 더함) */
+function matchOnlineGroup(): MockGroup {
+  const taken = new Set<string>()
+  const others = 3 + Math.floor(Math.random() * 2)
+  const members: MockMember[] = Array.from({ length: others }, () => ({ memberId: nextId(), displayName: alias(taken), isMe: false }))
+  members.push({ memberId: nextId(), displayName: alias(taken), isMe: true })
+  const used = new Set(s.groups.map((g) => g.name))
+  return newGroup('ONLINE', ONLINE_NAMES.find((n) => !used.has(n)) ?? '함께 걷기', members)
 }
 
 /* ───────── API ───────── */
@@ -298,6 +328,7 @@ export const mockApi: HaengunApi = {
         sensitiveConsent: !!a.sensitiveConsentAt,
         createdAt: new Date(a.createdAt).toISOString(),
         today: today(),
+        isDemo: !!a.isDemo,
       }
     }),
   patchMe: (b) =>
@@ -307,7 +338,7 @@ export const mockApi: HaengunApi = {
       if (!nickname || nickname.length > 10) fail(400, 'VALIDATION_FAILED', '닉네임은 1~10자로 입력해 주세요')
       a.nickname = nickname
       for (const g of s.groups) if (g.type !== 'ONLINE') myMember(g).displayName = nickname
-      return { nickname, adultConfirmed: a.adultConfirmed, sensitiveConsent: !!a.sensitiveConsentAt, createdAt: new Date(a.createdAt).toISOString(), today: today() }
+      return { nickname, adultConfirmed: a.adultConfirmed, sensitiveConsent: !!a.sensitiveConsentAt, createdAt: new Date(a.createdAt).toISOString(), today: today(), isDemo: !!a.isDemo }
     }),
   putSensitiveConsent: (b) =>
     handle(() => {
@@ -335,6 +366,10 @@ export const mockApi: HaengunApi = {
   getGroups: () =>
     handle(() => {
       requireAccount()
+      if (s.queue && nowMs() - s.queue.queuedAt >= 20_000 && s.groups.length < MAX_GROUPS) {
+        s.queue = null
+        matchOnlineGroup()
+      }
       const groups = s.groups.map(summaryOf)
       s.justCompleted = {} // 완성 연출은 한 번만
       return { groups, queue: { waiting: !!s.queue, queuedAt: s.queue ? new Date(s.queue.queuedAt).toISOString() : null } }
@@ -389,14 +424,12 @@ export const mockApi: HaengunApi = {
       if (!a.adultConfirmed) fail(403, 'ADULT_CONFIRMATION_REQUIRED', '만 19세 이상 확인이 필요해요')
       if (s.queue) fail(409, 'ALREADY_QUEUED', '이미 기다리는 중이에요')
       assertCanJoin()
-      // 목업: 빈자리가 있는 4~5명 그룹이 있다고 보고 바로 배정한다 (대기 흉내는 그룹 단계에서)
-      const taken = new Set<string>()
-      const others = 3 + Math.floor(Math.random() * 2)
-      const members: MockMember[] = Array.from({ length: others }, () => ({ memberId: nextId(), displayName: alias(taken), isMe: false }))
-      members.push({ memberId: nextId(), displayName: alias(taken), isMe: true })
-      const used = new Set(s.groups.map((g) => g.name))
-      const g = newGroup('ONLINE', ONLINE_NAMES.find((n) => !used.has(n)) ?? '함께 걷기', members)
-      return { status: 'MATCHED' as const, groupId: g.groupId }
+      // 시연 도구에서 '대기부터'를 고르면 대기열에 넣고, 잠시 뒤 4명이 모인 것으로 배정한다
+      if (s.queueMode === 'wait') {
+        s.queue = { queuedAt: nowMs() }
+        return { status: 'WAITING' as const, queuedAt: new Date(s.queue.queuedAt).toISOString() }
+      }
+      return { status: 'MATCHED' as const, groupId: matchOnlineGroup().groupId }
     }),
   leaveOnlineQueue: () =>
     handle(() => {
@@ -583,7 +616,7 @@ export const mockApi: HaengunApi = {
     handle(() => ({
       version: '2026-11-16',
       syncedAt: '2026-11-15T19:00:00Z',
-      items: [...CRISIS_LINES, ...HELP_SERVICES].map(toHelpItem),
+      items: [...CRISIS_LINES, ...HELP_SERVICES].map(toHelpItem).flatMap((x) => (x.id === 'mental-center' ? [x, ...SEOUL_CENTERS] : [x])),
     })),
   getHelpSignals: () =>
     handle(() => {
@@ -626,7 +659,7 @@ export function seedMockDemo() {
   const offset = s.clockOffsetMs
   s = emptyState(offset)
   const day = today()
-  s.account = { nickname: '소은', adultConfirmed: true, sensitiveConsentAt: nowMs(), createdAt: nowMs() }
+  s.account = { nickname: '소은', adultConfirmed: true, sensitiveConsentAt: nowMs(), createdAt: nowMs(), isDemo: true }
   s.moods = { [addDays(day, -2)]: 'TIRED', [addDays(day, -1)]: 'TIRED', [addDays(day, -4)]: 'OKAY', [addDays(day, -5)]: 'CALM' }
 
   const friendMe = meMember('소은')
@@ -665,11 +698,24 @@ export function seedMockDemo() {
   // 이번 달 미션 기록 몇 개 (오늘 주제는 '햇빛 받으며 걷기'로 고정 — 시연 시나리오 2단계)
   for (const [i, back] of [3, 4, 6, 7, 9].entries()) {
     const d = addDays(day, -back)
-    s.missions[d] = { topicId: [1, 4, 14, 6, 9][i], minutes: 10, place: i % 2 ? 'INDOOR' : 'OUTDOOR', size: 10, startedAt: nowMs(), completedAt: nowMs() }
+    const topic = topicSeedById([1, 4, 14, 6, 9][i])
+    // MIS-04: 고른 시간 10분 → TIME이면 10분, COUNT면 2번 (그날 기분 반영)
+    const size = sizeFor(s.moods[d], 10, topic.sizeType, topic.countSizes)
+    s.missions[d] = { topicId: topic.topicId, minutes: 10, place: i % 2 ? 'INDOOR' : 'OUTDOOR', size, startedAt: nowMs(), completedAt: nowMs() }
   }
   s.missions[day] = { topicId: 5 }
   s.lastChoice = { minutes: 10, place: 'OUTDOOR' }
   saveState(s)
+}
+
+/** 목업 전용: 다음 온라인 참여를 바로 배정할지, 대기부터 할지 */
+export function setMockQueueMode(mode: 'match' | 'wait') {
+  s.queueMode = mode
+  saveState(s)
+}
+
+export function getMockQueueMode(): 'match' | 'wait' {
+  return s.queueMode ?? 'match'
 }
 
 /** 목업 전용: 현재 시각(시연 시계 반영) — 시연 도구 표시용 */

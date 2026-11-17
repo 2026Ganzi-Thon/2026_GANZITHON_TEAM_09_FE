@@ -28,7 +28,7 @@ export function HelpPage() {
   return (
     <Page withTabBar={onboarded} gap={8}>
       <PageHeader title="도움받기" back={onboarded ? undefined : '/welcome'} />
-      <p className={styles.lead}>로그인 없이도, 인터넷이 끊겨도 열려요 · 앱은 위기를 감지하지 못해요</p>
+      <p className={styles.lead}>가입 전에도, 오프라인에서도 열려요 · 앱은 위기를 감지하지 못해요</p>
 
       {items.isPending ? (
         <Loading />
@@ -89,7 +89,9 @@ export function HelpPage() {
               )}
 
               <p className={styles.footer}>
-                이 앱은 치료 서비스가 아니고 위기를 감지하지 못해요. 지금 힘들면 24시간 채널로 연락하세요.
+                이 앱은 치료 서비스가 아니고 위기를 감지하지 못해요.
+                <br />
+                지금 힘들면 24시간 채널로 연락하세요.
                 {base ? (
                   <>
                     <br />

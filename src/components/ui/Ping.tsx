@@ -2,7 +2,7 @@ import { pingByType } from '../../data/pings'
 import type { PingEmoji } from '../../api/types'
 import styles from './Ping.module.css'
 
-/** Figma Ping: 종류=클로버 / 햇살 / 하트 / 별 (44px 원) */
+/** Figma Ping: 종류=잘했어(별) / 클로버 / 응원해(하트) / 햇살 (44px 원) */
 export function PingBadge({ type, size = 44 }: { type: PingEmoji; size?: number }) {
   const ping = pingByType(type)
   return (

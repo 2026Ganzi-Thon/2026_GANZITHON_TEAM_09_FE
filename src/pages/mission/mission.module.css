@@ -169,11 +169,63 @@
   text-align: center;
 }
 
-.photoRow {
+/* 완료 화면의 추억 기록 카드 (사진·한 줄 메모, 이 기기에만) */
+.recordCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: var(--radius-card);
+  border: 1px dashed var(--color-line);
+  background: var(--color-card);
+  text-align: center;
+}
+
+.recordCardStrong {
+  border-style: solid;
+  border-color: var(--color-sky);
+}
+
+.recordTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.recordSub {
+  font-size: 12px;
+  color: var(--color-mute);
+  margin-bottom: 4px;
+}
+
+.recordSaved {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 10px;
+  width: 100%;
+  text-align: left;
+}
+
+.recordSavedText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.recordSavedText b {
+  font-size: 13px;
+  color: var(--color-navy-deep);
+}
+
+.recordSavedText span {
+  font-size: 12.5px;
+  color: var(--color-mute);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .photo {

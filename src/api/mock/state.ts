@@ -1,4 +1,5 @@
 import type { CheckResultCode, GroupType, MissionMinutes, Mood, NotificationSettings, PingEmoji, Place, ReportReason } from '../types'
+import { isPersistenceFrozen } from '../../device/persistence'
 
 /**
  * 목업 서버의 저장 상태 (실서버의 PostgreSQL 대신).
@@ -44,6 +45,8 @@ export interface MockState {
     adultConfirmed: boolean
     sensitiveConsentAt: number | null
     createdAt: number
+    /** 시연 시드로 만든 계정 (GET /me의 isDemo) */
+    isDemo?: boolean
   } | null
   moods: Record<string, Mood>
   helpCardDismissedOn?: string
@@ -62,6 +65,8 @@ export interface MockState {
   reports: { groupId: number; memberId: number; reason: ReportReason; at: number }[]
   invites: Record<number, { code: string; expiresAt: number }>
   queue: { queuedAt: number } | null
+  /** 목업 전용: 다음 온라인 참여를 바로 배정할지, 대기부터 할지 (시연 도구) */
+  queueMode?: 'match' | 'wait'
   notification: NotificationSettings
 }
 
@@ -101,6 +106,7 @@ export function loadState(): MockState {
 }
 
 export function saveState(s: MockState) {
+  if (isPersistenceFrozen()) return
   try {
     localStorage.setItem(KEY, JSON.stringify(s))
   } catch {

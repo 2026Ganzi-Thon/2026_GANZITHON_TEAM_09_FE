@@ -139,6 +139,60 @@
   gap: 12px;
 }
 
+.consentBox li {
+  font-size: 13px;
+  color: var(--color-ink);
+  line-height: 1.5;
+}
+
+.notiItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0;
+  font-size: 13px;
+  color: var(--color-mute);
+}
+
+.notiItem + .notiItem {
+  padding-top: 10px;
+  border-top: 1px solid var(--color-sky-soft);
+}
+
+.notiItem b {
+  font-size: 14px;
+  color: var(--color-ink);
+}
+
+.featureList {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 8px 0 12px;
+  padding: 16px 18px;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  text-align: left;
+}
+
+.featureList li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.footnote {
+  margin-top: -6px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-mute);
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -310,4 +364,12 @@
   margin-top: -4px;
   font-size: 12px;
   color: var(--color-mute);
+}
+
+/* 동의 화면: 주 버튼이 곧 동의라는 안내 (체크박스 대신) */
+.consentNote {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--color-navy-deep);
 }

@@ -53,6 +53,12 @@ export type ApiErrorCode =
   | 'NOT_ALLOWED_FOR_GROUP_TYPE'
   | 'INVITE_EXPIRED'
   | 'RATE_LIMITED'
+  /** 400 · 요청 본문을 읽을 수 없음 (JSON 형식 오류 등) */
+  | 'MALFORMED_REQUEST'
+  /** 405 · 지원하지 않는 HTTP 메서드 */
+  | 'METHOD_NOT_ALLOWED'
+  /** 500 · 서버 내부 오류 */
+  | 'INTERNAL_ERROR'
   /** 서버에 닿지 못함 (오프라인 등) — 프론트 전용 */
   | 'NETWORK'
 
@@ -70,6 +76,11 @@ export interface Me {
   createdAt: InstantString
   /** 서버 기준 오늘(KST). 기분 팝업 판단에 쓴다 */
   today: DateString
+  /**
+   * 시연 계정이면 true. 마이의 시연 도구를 이 값으로 보인다.
+   * api.md(2026-11-16)에는 아직 없어 선택 필드로 둔다 — 값이 없으면 시연 계정이 아닌 것으로 본다.
+   */
+  isDemo?: boolean
 }
 
 /* ── 그룹 ── */
