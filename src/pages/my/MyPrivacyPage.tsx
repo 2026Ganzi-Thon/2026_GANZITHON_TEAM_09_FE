@@ -9,6 +9,7 @@ import { BottomSheet } from '../../components/ui/BottomSheet'
 import { Button } from '../../components/ui/Button'
 import { TextField, Toggle } from '../../components/ui/Form'
 import { useToast } from '../../components/ui/Toast'
+import { forgetActiveAccount } from '../../device/accounts'
 import { clearMemories } from '../../device/memories'
 import { clearDeviceProfile } from '../../device/profile'
 import { resetDevice } from '../../device/store'
@@ -36,6 +37,8 @@ export function MyPrivacyPage() {
       await api.deleteMe()
       clearDeviceProfile()
       await clearMemories()
+      // 계정 목록에서 이 계정만 뺀다 (이 기기에 보관된 다른 계정은 그대로)
+      forgetActiveAccount()
       clearPersistedCache()
       resetDevice()
       qc.clear()
@@ -107,10 +110,7 @@ export function MyPrivacyPage() {
       {/* 계정 삭제 1/2 */}
       <BottomSheet open={sheet === 'account1'} onClose={() => setSheet(null)} label="계정 삭제 확인">
         <h2 className={styles.sheetTitle}>계정을 삭제할까요?</h2>
-        <p className={styles.summary}>
-          계정과 기분·미션·점검 기록, 이 기기의 추억 기록(사진·메모)과 맞춤 정보가 <b>영구적으로 삭제</b>되고 되돌릴 수 없어요. 모든 그룹에서
-          나가며, 함께 키운 캐릭터와 도감은 그룹에 남아요.
-        </p>
+        <p className={styles.summary}>모든 그룹에서 나가고 기분·미션·점검 기록이 사라져요. 함께 키운 캐릭터와 도감은 그룹에 남아요.</p>
         <Button variant="secondary" onClick={() => setSheet('account2')}>
           계속하기
         </Button>

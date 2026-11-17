@@ -62,6 +62,7 @@ export function TabLayout() {
   const me = useMe()
   const device = useDevice()
   const { pathname } = useLocation()
+  // 도움받기(HELP-01)는 계정 없이도 열린다. 기분·점검 팝업도 띄우지 않는다
   const isHelp = pathname === '/help' || pathname.startsWith('/help/')
   const ready = !!me.data && device.onboarded
   const popups = useAppPopups(isHelp)

@@ -13,8 +13,13 @@ import styles from './HelpDetailPage.module.css'
 /**
  * S41 도움받을 곳 상세 (Figma 27): 제목에 사업 이름, 태그, 누가·무엇을·어떻게, 이 카드가 보이는 이유,
  * 전화하기, 정보 기준일. 계정 없이, 오프라인에서도 열린다. 이용 기록은 저장하지 않는다.
- * 공식 페이지·정부24로 나가는 버튼은 두지 않는다 (2026-11-17 결정).
+ *
+ * 외부 웹페이지로 나가는 링크는 두지 않는다 — 앱(PWA) 밖 다른 브라우저로 넘어가지 않게 한다.
+ * 연결은 전화(tel:)만 남긴다. 위기 상황에서 바로 걸 수 있어야 해서다.
  */
+
+/** 정신건강위기상담전화: 지금 있는 지역의 정신건강복지센터로 연결된다 (24시간) */
+const CENTER_LINE = '1577-0199'
 export function HelpDetailPage() {
   const { serviceId = '' } = useParams()
   const me = useMe()
@@ -32,6 +37,9 @@ export function HelpDetailPage() {
   const service = findHelpItem(items.data.items, serviceId, ctx)
   if (!service) return <Navigate to="/help" replace />
 
+  // 연락처가 아직 없는 센터 카드(구 센터·센터 찾기)는 위기상담전화로 가까운 센터에 연결한다
+  const isCenterCard = service.kind === 'LOCAL_CENTER' || service.kind === 'CENTER_FINDER'
+  const phone = service.phone ?? (isCenterCard ? CENTER_LINE : null)
   const basis = profileBasisLabel(profile, today, (j) => JOB_LABELS[j])
   const why = [
     profileIsEmpty(profile) ? '입력한 정보가 없어서 모든 분께 보여 드리는 곳이에요.' : `${basis}로 입력했어요.`,
@@ -81,11 +89,12 @@ export function HelpDetailPage() {
         <h2>이 카드가 보이는 이유</h2>
         <p>{why}</p>
       </section>
-      {service.phone ? (
-        <a className={styles.call} href={telHref(service.phone)}>
-          {service.phone} 전화하기
+      {phone ? (
+        <a className={styles.call} href={telHref(phone)}>
+          {phone} 전화하기
         </a>
       ) : null}
+      {phone && !service.phone ? <p className={styles.basis}>{CENTER_LINE}로 걸면 지금 있는 지역의 정신건강복지센터로 연결돼요.</p> : null}
       <p className={styles.basis}>
         {baseDate ? `정보 기준일 ${baseDate} · ` : ''}행정안전부 공공서비스(혜택) 정보
         <br />

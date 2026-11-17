@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { API_MODE } from '../../api'
 import { errorMessage } from '../../api/errors'
@@ -9,7 +9,7 @@ import { Character } from '../../components/character/Character'
 import { Card, Page, PageHeader } from '../../components/layout/Page'
 import { BottomSheet } from '../../components/ui/BottomSheet'
 import { Button } from '../../components/ui/Button'
-import { backupBeforeDemo, endDemo, getDemoBackupMeta, type DemoBackupMeta } from '../../device/demoBackup'
+import { endDemoAccount, startDemoAccount, useAccounts } from '../../device/accounts'
 import { useToast } from '../../components/ui/Toast'
 import { setDeviceProfile } from '../../device/profile'
 import { clearMemories } from '../../device/memories'
@@ -38,49 +38,44 @@ export function MyPage() {
   const rep = useAllCharacters().representative
   const [queueMode, setQueueMode] = useState(getMockQueueMode())
   const isDemo = !!me.data?.isDemo
-  const [backupMeta, setBackupMeta] = useState<DemoBackupMeta | null>(null)
+  const accounts = useAccounts()
+  const activeEntry = accounts.accounts.find((a) => a.id === accounts.activeId)
+  const returnEntry = accounts.accounts.find((a) => a.id === activeEntry?.demoReturnId)
   const [confirmEnd, setConfirmEnd] = useState(false)
   const [demoBusy, setDemoBusy] = useState(false)
-  useEffect(() => {
-    if (API_MODE !== 'mock') return
-    getDemoBackupMeta()
-      .then(setBackupMeta)
-      .catch(() => setBackupMeta(null))
-  }, [isDemo])
 
   /**
-   * 시연 데이터 불러오기: 시연 중이 아니면 지금 계정 데이터를 먼저 백업하고(다시 읽어 확인까지), 성공했을 때만 바꾼다.
-   * 시연 중이면 백업은 그대로 두고 시연 데이터만 처음부터 다시 넣는다.
+   * 시연 데이터 불러오기 = '시연 계정'으로 바꾸기 (device/accounts).
+   * 지금 계정은 보관(확인까지)되고 지워지지 않는다. 이미 시연 계정이면 그 자리에서 처음부터 다시 넣는다.
    */
   const loadDemo = async () => {
-    if (!isDemo && backupMeta) {
-      toast('시연 전 백업이 남아 있어 지금 데이터를 덮어쓰지 않았어요')
-      return
-    }
     setDemoBusy(true)
-    try {
-      if (!isDemo) await backupBeforeDemo(me.data?.nickname)
-    } catch {
+    if (isDemo) {
+      seedMockDemo()
+      setDeviceProfile({ birthDate: '2000-05-14', sido: '서울특별시', sigungu: '마포구', job: 'STUDENT' })
+      resetDevice()
+      await clearMemories()
+      updateDevice({ onboarded: true })
+      await qc.resetQueries()
       setDemoBusy(false)
-      toast('지금 데이터를 백업하지 못해 시연 데이터를 불러오지 않았어요')
+      toast('시연 데이터를 처음부터 다시 불러왔어요')
+      navigate('/groups')
       return
     }
-    seedMockDemo()
-    setDeviceProfile({ birthDate: '2000-05-14', sido: '서울특별시', sigungu: '마포구', job: 'STUDENT' })
-    resetDevice()
-    await clearMemories()
-    updateDevice({ onboarded: true })
-    await qc.resetQueries()
-    setDemoBusy(false)
-    toast(isDemo ? '시연 데이터를 처음부터 다시 불러왔어요' : '시연 데이터를 불러왔어요')
-    navigate('/groups')
+    try {
+      await startDemoAccount()
+      qc.clear()
+      window.location.replace('/groups')
+    } catch {
+      window.location.reload()
+    }
   }
 
-  /** 시연 종료: 백업으로 되돌린 뒤 새로 연다 (백업이 없으면 시연 데이터만 지우고 시작 화면) */
+  /** 시연 종료: 시연 계정을 지우고 시연 전 계정으로 돌아간다 (없으면 시작 화면) */
   const finishDemo = async () => {
     setDemoBusy(true)
     try {
-      const result = await endDemo()
+      const result = await endDemoAccount()
       qc.clear()
       window.location.replace(result === 'restored' ? '/' : '/welcome')
     } catch {
@@ -218,9 +213,9 @@ export function MyPage() {
       <BottomSheet open={confirmEnd} onClose={() => setConfirmEnd(false)} label="시연 종료 확인">
         <h2 className={styles.sheetTitle}>시연을 끝낼까요?</h2>
         <p className={styles.summary}>
-          {backupMeta
-            ? `시연 데이터는 지워지고, 시연 전에 쓰던 ${backupMeta.nickname ? `'${backupMeta.nickname}' ` : ''}데이터로 돌아가요. 그 데이터의 기록은 그대로예요.`
-            : '시연 전에 백업한 데이터가 없어요. 시연 데이터를 지우고 시작 화면으로 가요.'}
+          {returnEntry
+            ? `시연 계정과 시연 데이터는 지워지고, 시연 전에 쓰던 '${returnEntry.nickname}' 계정으로 돌아가요. 그 계정의 기록은 그대로예요.`
+            : '돌아갈 계정이 없어요. 시연 계정과 시연 데이터를 지우고 시작 화면으로 가요.'}
         </p>
         <Button loading={demoBusy} onClick={finishDemo}>
           시연 종료
