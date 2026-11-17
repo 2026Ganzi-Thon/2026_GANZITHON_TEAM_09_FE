@@ -43,12 +43,14 @@ export default defineConfig(({ mode }) => {
             options: { cacheName: 'help-items', cacheableResponse: { statuses: [0, 200] } },
           },
           {
-            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
+            // 글꼴(앱이 직접 주는 Jua·IBM Plex Sans KR). 글자 범위별 조각이 450개(6MB)라 미리 다 받지 않고,
+            // 화면에 나온 글자의 조각만 받은 뒤 기기에 남긴다. 파일 이름에 해시가 있어 바뀌면 새로 받는다.
+            urlPattern: ({ url, sameOrigin }) => sameOrigin && /\.woff2?$/.test(url.pathname),
             handler: 'CacheFirst',
             options: {
-              cacheName: 'google-fonts',
-              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
-              cacheableResponse: { statuses: [0, 200] },
+              cacheName: 'fonts',
+              expiration: { maxEntries: 500, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [200] },
             },
           },
         ],
