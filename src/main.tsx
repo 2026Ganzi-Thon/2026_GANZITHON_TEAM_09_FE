@@ -1,5 +1,12 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+// 글꼴은 앱이 직접 준다 (외부 글꼴 서버 없이: 화면 CSP는 자기 출처만 허용, 오프라인 시연에서도 같은 글꼴).
+// Jua = 제목·브랜드(--font-display), IBM Plex Sans KR = 본문(--font-body). 둘 다 SIL OFL 1.1
+import '@fontsource/jua/400.css'
+import '@fontsource/ibm-plex-sans-kr/400.css'
+import '@fontsource/ibm-plex-sans-kr/500.css'
+import '@fontsource/ibm-plex-sans-kr/600.css'
+import '@fontsource/ibm-plex-sans-kr/700.css'
 import './styles/global.css'
 import App from './app/App.tsx'
 import { initAccounts } from './device/accounts'
