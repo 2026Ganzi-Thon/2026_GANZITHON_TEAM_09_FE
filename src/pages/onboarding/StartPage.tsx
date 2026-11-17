@@ -4,7 +4,6 @@ import { entryPath } from '../../app/entry'
 import { Character } from '../../components/character/Character'
 import { ButtonLink } from '../../components/ui/Button'
 import { useDevice } from '../../device/store'
-import { useAccounts } from '../../device/accounts'
 import styles from './onboarding.module.css'
 
 const FEATURES = [
@@ -17,7 +16,6 @@ const FEATURES = [
 export function StartPage() {
   const me = useMe()
   const device = useDevice()
-  const savedCount = useAccounts().accounts.length
   // 이미 계정이 있으면 시작 화면을 건너뛴다 (기존 사용자 자동 진입)
   if (me.data) return <Navigate to={entryPath(me.data, device)} replace />
 
@@ -39,12 +37,6 @@ export function StartPage() {
         <Link to="/help" className={styles.textLink}>
           지금 많이 힘들면 <b>도움받기 ›</b>
         </Link>
-        {/* 목업 다중 계정: 이 기기에 보관된 계정이 있으면 돌아갈 수 있게 */}
-        {savedCount > 0 ? (
-          <Link to="/accounts" className={styles.textLink}>
-            저장된 계정 {savedCount}개 <b>계정 관리 ›</b>
-          </Link>
-        ) : null}
       </div>
     </main>
   )
