@@ -2,7 +2,6 @@ import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/re
 import { api } from './index'
 import { updateDevice } from '../device/store'
 import { isPersistenceFrozen } from '../device/persistence'
-import { syncActiveAccount } from '../device/accounts'
 import { ApiError } from './errors'
 import type { GroupsResponse, MissionToday, Mood, NotificationSettings, PingEmoji, ReportReason, StartMissionRequest } from './types'
 
@@ -44,8 +43,6 @@ export function useMe() {
       try {
         const me = await api.getMe()
         writeCache('me', { today: me.today })
-        // 목업 다중 계정: 새로 만든 계정 등록·닉네임 맞추기 (저장 잠금 중에는 하지 않음)
-        if (!isPersistenceFrozen()) syncActiveAccount(me)
         return me
       } catch (e) {
         if (e instanceof ApiError && e.code === 'UNAUTHENTICATED') return null

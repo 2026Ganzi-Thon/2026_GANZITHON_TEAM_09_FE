@@ -39,8 +39,11 @@ export function setDeviceProfile(next: DeviceProfile) {
   void idb('readwrite', (s) => s.put(profile, KEY)).catch(() => {})
 }
 
+/** 계정 삭제: 빈 값으로 덮지 않고 저장 키 자체를 지운다 */
 export function clearDeviceProfile() {
-  setDeviceProfile({})
+  profile = {}
+  listeners.forEach((l) => l())
+  void idb('readwrite', (s) => s.delete(KEY)).catch(() => {})
 }
 
 export function useDeviceProfile(): DeviceProfile {

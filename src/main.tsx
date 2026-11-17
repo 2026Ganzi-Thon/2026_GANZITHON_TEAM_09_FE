@@ -2,14 +2,14 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles/global.css'
 import App from './app/App.tsx'
-import { initAccounts } from './device/accounts'
+import { migrateLegacyAccounts } from './device/demoBackup'
 import { loadMemories } from './device/memories'
 import { loadDeviceProfile } from './device/profile'
 
 async function boot() {
-  // 계정 목록 준비(처음이면 지금 계정을 등록만, 전환 도중 멈춘 경우 되살리기)를 가장 먼저
-  const accounts = await initAccounts().catch(() => 'ok' as const)
-  if (accounts === 'reload') {
+  // 한때 있던 다중 계정 기능의 흔적 정리 (시연 전 계정 → 시연 백업, 도중에 멈춘 경우 되살리기)
+  const migrated = await migrateLegacyAccounts().catch(() => 'ok' as const)
+  if (migrated === 'reload') {
     window.location.reload()
     return
   }

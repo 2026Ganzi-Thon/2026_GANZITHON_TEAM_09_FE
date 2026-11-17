@@ -10,11 +10,10 @@ import { JOB_LABELS } from '../../features/profile/jobs'
 import { useNow } from '../../hooks/useNow'
 import styles from './HelpDetailPage.module.css'
 
-const GOV24 = (id: string) => `https://www.gov.kr/portal/rcvfvrSvc/dtlEx/${id}`
-
 /**
  * S41 도움받을 곳 상세 (Figma 27): 제목에 사업 이름, 태그, 누가·무엇을·어떻게, 이 카드가 보이는 이유,
- * 공식 페이지 버튼, 정보 기준일. 계정 없이, 오프라인에서도 열린다. 이용 기록은 저장하지 않는다.
+ * 전화하기, 정보 기준일. 계정 없이, 오프라인에서도 열린다. 이용 기록은 저장하지 않는다.
+ * 공식 페이지·정부24로 나가는 버튼은 두지 않는다 (2026-11-17 결정).
  */
 export function HelpDetailPage() {
   const { serviceId = '' } = useParams()
@@ -33,8 +32,6 @@ export function HelpDetailPage() {
   const service = findHelpItem(items.data.items, serviceId, ctx)
   if (!service) return <Navigate to="/help" replace />
 
-  // 연락처가 아직 없는 구 센터는 정부24 정신건강복지센터 안내로
-  const officialUrl = service.url ?? (service.sourceServiceId ? GOV24(service.sourceServiceId) : null)
   const basis = profileBasisLabel(profile, today, (j) => JOB_LABELS[j])
   const why = [
     profileIsEmpty(profile) ? '입력한 정보가 없어서 모든 분께 보여 드리는 곳이에요.' : `${basis}로 입력했어요.`,
@@ -85,13 +82,8 @@ export function HelpDetailPage() {
         <p>{why}</p>
       </section>
       {service.phone ? (
-        <a className={officialUrl ? styles.link : styles.call} href={telHref(service.phone)}>
+        <a className={styles.call} href={telHref(service.phone)}>
           {service.phone} 전화하기
-        </a>
-      ) : null}
-      {officialUrl ? (
-        <a className={styles.call} href={officialUrl} target="_blank" rel="noopener noreferrer">
-          {service.url ? '공식 페이지에서 신청하기 ↗' : '연락처·위치 찾기 (정부24) ↗'}
         </a>
       ) : null}
       <p className={styles.basis}>
