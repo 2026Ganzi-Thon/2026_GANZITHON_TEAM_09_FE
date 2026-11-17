@@ -4,15 +4,16 @@ import { entryPath } from '../../app/entry'
 import { Character } from '../../components/character/Character'
 import { ButtonLink } from '../../components/ui/Button'
 import { useDevice } from '../../device/store'
-import styles from './onboarding.module.css'
+import { HeartIcon, MoodIcon, SproutIcon } from './StartIcons'
+import styles from './StartPage.module.css'
 
 const FEATURES = [
-  { icon: '😊', title: '하루 한 번, 기분 한 번 탭' },
-  { icon: '🍀', title: '각자 작은 미션, 함께 키우는 캐릭터' },
-  { icon: '🤝', title: '힘든 날엔 도움받을 곳으로' },
+  { Icon: MoodIcon, title: '하루 한 번, 기분 한 번 탭' },
+  { Icon: SproutIcon, title: '각자 작은 미션, 함께 키우는 캐릭터' },
+  { Icon: HeartIcon, title: '힘든 날엔 도움받을 곳으로' },
 ]
 
-/** S01·S02 시작 (Figma 11): 브랜드, 소개, 기능 소개 카드(3줄), 시작하기, 도움받기 링크 */
+/** S01·S02 시작 (Figma 11): 브랜드, 소개, 기능 소개 카드(3줄), 시작하기, 도움받기 링크. 스타일은 스플래시와 맞춘다 (StartPage.module.css) */
 export function StartPage() {
   const me = useMe()
   const device = useDevice()
@@ -21,13 +22,19 @@ export function StartPage() {
 
   return (
     <main className={styles.start}>
-      <Character stage={4} size={120} mood="happy" />
-      <h1 className={styles.brand}>행운핑</h1>
-      <p className={styles.tagline}>함께 하는 작은 활동으로 일상을 돌보고, 힘든 날엔 실제 도움으로 이어줘요</p>
-      <ul className={styles.featureList}>
+      <div className={styles.hero}>
+        <Character stage={4} size={120} mood="happy" />
+        <h1 className={styles.brand}>행운핑</h1>
+        <p className={styles.tagline}>함께 하는 작은 활동으로 일상을 돌보고,
+          <br />
+          힘든 날엔 실제 도움으로 이어줘요</p>
+      </div>
+      <ul className={styles.features}>
         {FEATURES.map((f) => (
           <li key={f.title}>
-            <span aria-hidden>{f.icon}</span>
+            <span className={styles.icon} aria-hidden>
+              <f.Icon />
+            </span>
             {f.title}
           </li>
         ))}
