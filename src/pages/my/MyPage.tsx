@@ -9,7 +9,7 @@ import { Character } from '../../components/character/Character'
 import { Card, Page, PageHeader } from '../../components/layout/Page'
 import { BottomSheet } from '../../components/ui/BottomSheet'
 import { Button } from '../../components/ui/Button'
-import { ACCOUNTS_SUPPORTED, endDemoAccount, startDemoAccount, useAccounts } from '../../device/accounts'
+import { endDemoAccount, startDemoAccount, useAccounts } from '../../device/accounts'
 import { useToast } from '../../components/ui/Toast'
 import { setDeviceProfile } from '../../device/profile'
 import { clearMemories } from '../../device/memories'
@@ -45,7 +45,7 @@ export function MyPage() {
   const [demoBusy, setDemoBusy] = useState(false)
 
   /**
-   * 시연 데이터 불러오기 = '시연 계정'으로 바꾸기 (계정 관리와 같은 방식).
+   * 시연 데이터 불러오기 = '시연 계정'으로 바꾸기 (device/accounts).
    * 지금 계정은 보관(확인까지)되고 지워지지 않는다. 이미 시연 계정이면 그 자리에서 처음부터 다시 넣는다.
    */
   const loadDemo = async () => {
@@ -90,8 +90,6 @@ export function MyPage() {
   // 메뉴 제목만 (설명 없이) — 자세한 내용은 각 화면에서
   const menu = [
     { to: '/my/profile', label: '내 정보' },
-    // 한 기기의 여러 익명 계정 (목업 모드만 — 실서버는 계정 전환 API가 생긴 뒤)
-    ...(ACCOUNTS_SUPPORTED ? [{ to: '/accounts', label: '계정 관리' }] : []),
     { to: '/my/memories', label: '추억 기록' },
     { to: '/collection', label: '캐릭터 도감' },
     { to: '/my/notifications', label: '알림 설정' },
@@ -217,7 +215,7 @@ export function MyPage() {
         <p className={styles.summary}>
           {returnEntry
             ? `시연 계정과 시연 데이터는 지워지고, 시연 전에 쓰던 '${returnEntry.nickname}' 계정으로 돌아가요. 그 계정의 기록은 그대로예요.`
-            : '돌아갈 계정이 없어요. 시연 계정과 시연 데이터를 지우고 시작 화면으로 가요. 계정 관리에 보관된 다른 계정은 그대로예요.'}
+            : '돌아갈 계정이 없어요. 시연 계정과 시연 데이터를 지우고 시작 화면으로 가요.'}
         </p>
         <Button loading={demoBusy} onClick={finishDemo}>
           시연 종료

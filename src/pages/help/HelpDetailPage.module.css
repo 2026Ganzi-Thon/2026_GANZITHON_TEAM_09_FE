@@ -53,8 +53,7 @@
   padding: 10px 14px;
 }
 
-.call,
-.link {
+.call {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -67,11 +66,6 @@
 .call {
   background: var(--color-navy);
   color: var(--color-card);
-}
-
-.link {
-  border: 1.5px solid var(--color-navy);
-  color: var(--color-navy);
 }
 
 .basis {

@@ -8,7 +8,11 @@ import { applySnapshot, clearLiveData, deleteSnapshot, getSnapshot, liveAccountI
 import { updateDevice } from './store'
 
 /**
- * 한 기기의 여러 익명 계정 (목업 모드 전용).
+ * 시연 계정 보관·복귀 (목업 모드 전용).
+ *
+ * 사용자가 계정을 고르고 바꾸는 '계정 관리' 화면은 없다 — 한 기기에서 다른 사람의 기분·점검 기록으로
+ * 넘어갈 수 있는 길을 두지 않기 위해서다. 남은 용도는 시연 하나뿐이다:
+ * 시연 데이터 불러오기 = 지금 계정을 보관하고 시연 계정을 만든다, 시연 종료 = 시연 계정을 지우고 보관한 계정으로 돌아간다.
  *
  * - 지금 쓰는 계정은 원래 저장 위치(localStorage 'haengunping:*', IndexedDB profile·memory:*)를 그대로 쓴다.
  * - 다른 계정은 IndexedDB 'account:{id}'에 스냅샷으로 보관한다. 전환 = 지금 계정을 보관 → 고른 계정을 되살림.
@@ -207,8 +211,8 @@ async function stashActive(r: Registry) {
   if (active) active.lastUsedAt = Date.now()
 }
 
-/** 다른 계정으로 전환. 지금 계정은 보관되고 지워지지 않는다. 끝나면 페이지를 다시 연다 */
-export async function switchAccount(targetId: string) {
+/** 보관된 시연 계정으로 전환. 지금 계정은 보관되고 지워지지 않는다. 끝나면 페이지를 다시 연다 */
+async function switchAccount(targetId: string) {
   const r = registry()
   if (targetId === r.activeId) return
   const target = await getSnapshot(slotKey(targetId))
@@ -224,26 +228,6 @@ export async function switchAccount(targetId: string) {
   await clearLiveData()
   await applySnapshot(target)
   await deleteSnapshot(slotKey(targetId))
-}
-
-/** 새 계정 만들기: 지금 계정을 보관하고 비운 뒤 시작 화면에서 새로 가입한다 */
-export async function startNewAccount() {
-  const r = registry()
-  freezePersistence()
-  await stashActive(r)
-  r.activeId = null
-  writeRegistry(r)
-  await clearLiveData()
-}
-
-/** 보관된(지금 쓰지 않는) 계정을 지운다. 다른 계정에는 영향이 없다 */
-export async function deleteSavedAccount(id: string) {
-  const r = registry()
-  if (id === r.activeId) throw new Error('지금 쓰는 계정은 내 데이터에서 지워요')
-  await deleteSnapshot(slotKey(id))
-  r.accounts = r.accounts.filter((a) => a.id !== id)
-  for (const a of r.accounts) if (a.demoReturnId === id) delete a.demoReturnId
-  writeRegistry(r)
 }
 
 /** 내 데이터 › 계정 삭제가 끝난 뒤: 목록에서 지금 계정을 뺀다 (보관된 다른 계정은 그대로) */
