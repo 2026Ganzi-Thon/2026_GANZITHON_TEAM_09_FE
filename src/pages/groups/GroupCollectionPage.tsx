@@ -8,9 +8,11 @@ import { daysBetween } from '../../features/date'
 import { displayStage, progressLabel, variantOf } from '../../features/selectors'
 import { formatDot, formatShortDot } from '../collection/format'
 import styles from '../collection/collection.module.css'
+import { useGroupName } from '../../features/group/groupName'
 
 /** S27 그룹 도감 (Figma 26). 구성원이 들어오거나 나가도 도감은 그룹에 남는다(CHR-09) */
 export function GroupCollectionPage() {
+  const groupName = useGroupName()
   const groupId = Number(useParams().groupId)
   const group = useGroup(groupId)
   const collection = useCollection(groupId)
@@ -26,7 +28,7 @@ export function GroupCollectionPage() {
 
   return (
     <Page withTabBar gap={14}>
-      <PageHeader title={`${g.name} 도감`} back backFallback={`/groups/${g.groupId}`} />
+      <PageHeader title={`${groupName(g)} 도감`} back backFallback={`/groups/${g.groupId}`} />
       <p className={styles.summary}>
         다 키운 캐릭터 {done.length} · 키우는 중 1
       </p>
@@ -34,7 +36,7 @@ export function GroupCollectionPage() {
         {done.map((c) => (
           <li key={c.characterId}>
             <Link to={`/collection/${g.groupId}/${c.characterId}`} className={styles.card}>
-              <Character stage={5} variant={variantOf(c.kind)} size={84} title={`${g.name}에서 다 키운 네잎클로버`} />
+              <Character stage={5} variant={variantOf(c.kind)} size={84} title={`${groupName(g)}에서 다 키운 네잎클로버`} />
               <span className={styles.name}>네잎클로버</span>
               <span className={styles.sub}>
                 {formatDot(c.startedOn)} ~ {formatShortDot(c.completedOn)}
@@ -44,7 +46,7 @@ export function GroupCollectionPage() {
         ))}
         <li>
           <Link to={`/collection/${g.groupId}/${g.character.characterId ?? 'current'}`} className={`${styles.card} ${styles.cardGrowing}`}>
-            <Character stage={displayStage(g.character)} variant={variantOf(g.character.kind)} size={84} title={`${g.name}에서 키우는 중`} />
+            <Character stage={displayStage(g.character)} variant={variantOf(g.character.kind)} size={84} title={`${groupName(g)}에서 키우는 중`} />
             <span className={styles.name}>키우는 중</span>
             <span className={styles.sub}>{progressLabel(g.character)}</span>
           </Link>

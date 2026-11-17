@@ -15,11 +15,13 @@ import { nextCheckDay } from '../../features/checkin/checkinRules'
 import { addDays, formatMonthDay, weekLabel, weekStartOf } from '../../features/date'
 import { displayStage, stageNameOf, variantOf } from '../../features/selectors'
 import styles from './records.module.css'
+import { useGroupName } from '../../features/group/groupName'
 
 const WEEK_LABELS = ['월', '화', '수', '목', '금', '토', '일']
 
 /** S30~S32 내 기록 (Figma 10): 기분 흐름, 참여한 미션, 캐릭터 도감. 빠진 날은 아무 표시도 하지 않는다. */
 export function RecordsPage() {
+  const groupName = useGroupName()
   const me = useMe()
   const device = useDevice()
   const day = me.data?.today ?? ''
@@ -124,9 +126,9 @@ export function RecordsPage() {
               const nickname = characterNicknameOf(device, g.groupId, g.character.characterId)
               return (
                 <Link key={g.groupId} to={`/collection/${g.groupId}/${g.character.characterId ?? 'current'}`} className={styles.dexItem}>
-                  <Character stage={displayStage(g.character)} variant={variantOf(g.character.kind)} size={64} title={`${g.name}에서 키우는 중`} />
+                  <Character stage={displayStage(g.character)} variant={variantOf(g.character.kind)} size={64} title={`${groupName(g)}에서 키우는 중`} />
                   <span>
-                    {nickname ?? g.name}
+                    {nickname ?? groupName(g)}
                     <br />
                     {stageNameOf(g.character)} · {Math.min(displayStage(g.character), 4)}단계
                   </span>

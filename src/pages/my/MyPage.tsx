@@ -20,6 +20,7 @@ import { useNow } from '../../hooks/useNow'
 import { useAllCharacters } from '../../features/character/useCharacters'
 import { displayStage, progressLabel, stageNameOf, variantOf } from '../../features/selectors'
 import styles from './my.module.css'
+import { useGroupName } from '../../features/group/groupName'
 
 
 /** KST 날짜 + 시:분 → ISO(UTC) */
@@ -28,6 +29,7 @@ const kstIso = (day: string, hour: number, minute: number) =>
 
 /** S50 마이 (Figma 21): 대표 캐릭터, 값이 보이는 목록, 알아 두세요. 시연 도구는 맨 아래 접힌 영역 */
 export function MyPage() {
+  const groupName = useGroupName()
   const me = useMe()
   const now = useNow()
   const navigate = useNavigate()
@@ -118,7 +120,7 @@ export function MyPage() {
       {/* 대표 캐릭터: 내 그룹 중 가장 많이 자란 캐릭터를 홈·그룹 상세와 같은 모습으로. 누르면 도감 */}
       <Link to="/collection" className={styles.profile} aria-label="캐릭터 도감 보기">
         {rep ? (
-          <Character stage={displayStage(rep)} variant={variantOf(rep.kind)} size={72} title={`${rep.group.name}의 ${stageNameOf(rep)}`} />
+          <Character stage={displayStage(rep)} variant={variantOf(rep.kind)} size={72} title={`${groupName(rep.group)}의 ${stageNameOf(rep)}`} />
         ) : (
           <Character stage={1} size={72} title="아직 키우는 캐릭터가 없어요" />
         )}
@@ -126,7 +128,7 @@ export function MyPage() {
           <p className={styles.nickname}>{me.data?.nickname ?? ''}</p>
           <p className={styles.summary}>{startedOn} 시작</p>
           <p className={styles.repLabel}>
-            {rep ? `${repNickname ?? `${rep.group.name}의 ${stageNameOf(rep)}`} · ${progressLabel(rep)}` : '그룹에서 캐릭터를 키워 보세요'}
+            {rep ? `${repNickname ?? `${groupName(rep.group)}의 ${stageNameOf(rep)}`} · ${progressLabel(rep)}` : '그룹에서 캐릭터를 키워 보세요'}
           </p>
         </div>
         <span className={styles.profileChevron} aria-hidden>

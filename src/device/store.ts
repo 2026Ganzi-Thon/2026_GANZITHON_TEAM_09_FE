@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import type { MissionMinutes, Place } from '../api/types'
+import type { GroupType, MissionMinutes, Place } from '../api/types'
 import { isPersistenceFrozen } from './persistence'
 
 /**
@@ -29,7 +29,7 @@ export interface DeviceState {
    * S26 완성 연출 대기열: GET /groups의 justCompleted는 한 번만 오므로 받는 즉시 여기에 남기고,
    * 사용자가 완성 화면을 보면 지운다.
    */
-  pendingCompletions: Record<number, { groupName: string; kind: string; completedOn: string; memberCount: number }>
+  pendingCompletions: Record<number, { groupName: string; kind: string; completedOn: string; memberCount: number; /** 1인 그룹이면 닉네임으로 보이게 (예전 기록엔 없음) */ groupType?: GroupType }>
   /**
    * (예전 저장소) 미션 사진. 2026-11-17부터 추억 기록은 IndexedDB(device/memories.ts)에 둔다.
    * 앱을 열 때 남아 있는 값을 옮기고 비운다 — 새로 쓰지 않는다.
