@@ -17,7 +17,6 @@ import { MemoryEditPage } from '../pages/memories/MemoryEditPage'
 import { MissionDonePage } from '../pages/mission/MissionDonePage'
 import { MissionPage } from '../pages/mission/MissionPage'
 import { MissionTimerPage } from '../pages/mission/MissionTimerPage'
-import { AccountsPage } from '../pages/my/AccountsPage'
 import { MyNoticePage } from '../pages/my/MyNoticePage'
 import { MyNotificationsPage } from '../pages/my/MyNotificationsPage'
 import { MyPage } from '../pages/my/MyPage'
@@ -79,8 +78,6 @@ export const router = createBrowserRouter([
       { path: '/my/notifications', element: <MyNotificationsPage /> },
       { path: '/my/privacy', element: <MyPrivacyPage /> },
       { path: '/my/notice', element: <MyNoticePage /> },
-      // 계정 관리 (목업 모드): 계정이 없어도 열린다 (TabLayout 예외)
-      { path: '/accounts', element: <AccountsPage /> },
       // 추억 기록: 미션 사진·한 줄 메모 (이 기기에만)
       { path: '/my/memories', element: <MemoriesPage /> },
       { path: '/my/memories/:date', element: <MemoryDetailPage /> },

@@ -1,0 +1,116 @@
+/*
+ * S01·S02 시작(/welcome). 앱 첫 진입 스플래시(launch/launch.module.css)를 기준으로 맞춘다:
+ * 같은 배경(--color-paper, 그라데이션 없음), 같은 브랜드 글꼴·크기·굵기(Jua 400, 42px),
+ * 같은 태그라인 색(navy, 14px), 같은 간격(10px). 스플래시에서 넘어와도 캐릭터와 이름이 그대로 이어져 보인다.
+ */
+.start {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: calc(var(--safe-top) + clamp(40px, 13vh, 120px)) var(--gutter) calc(var(--safe-bottom) + 28px);
+  text-align: center;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 42px;
+  line-height: 1.15;
+  color: var(--color-navy-deep);
+}
+
+.tagline {
+  max-width: 300px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-navy);
+  word-break: keep-all;
+}
+
+/* 스플래시에 없던 것(기능 소개·버튼)만 살짝 떠오르며 나타난다 */
+.features {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 28px;
+  padding: 16px 18px;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  text-align: left;
+  animation: fade 0.6s 0.1s ease both;
+}
+
+.features li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+}
+
+/* 버튼은 화면 아래쪽에 (내용이 길면 그대로 이어서) */
+.actions {
+  width: 100%;
+  margin-top: auto;
+  padding-top: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  animation: fade 0.6s 0.25s ease both;
+}
+
+.textLink {
+  display: inline-block;
+  padding: 8px;
+  font-size: 13px;
+  color: var(--color-mute);
+}
+
+.textLink b {
+  color: var(--color-navy);
+}
+
+/* 작은 폰(SE 등): 여백만 줄여 '시작하기'가 첫 화면에 보이게 */
+@media (max-height: 700px) {
+  .start {
+    padding-top: calc(var(--safe-top) + 20px);
+    padding-bottom: calc(var(--safe-bottom) + 12px);
+  }
+
+  .features {
+    gap: 10px;
+    margin-top: 18px;
+    padding: 14px 16px;
+  }
+
+  .actions {
+    padding-top: 16px;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}

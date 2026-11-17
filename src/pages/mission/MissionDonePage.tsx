@@ -21,9 +21,11 @@ import { useMemory } from '../../device/memories'
 import { isWritingMission } from '../../features/memory/format'
 import type { MemoryEditState } from '../memories/MemoryEditPage'
 import styles from './mission.module.css'
+import { useGroupName } from '../../features/group/groupName'
 
 /** S23 완료 · 이모티콘 핑 (Figma 6). 핑은 선택이고, 한 번 보내면 내 모든 그룹에 간다 (PING-02) */
 export function MissionDonePage() {
+  const groupName = useGroupName()
   const navigate = useNavigate()
   const toast = useToast()
   const device = useDevice()
@@ -105,7 +107,7 @@ export function MissionDonePage() {
       {/* Figma 6: "내 그룹 3곳에 반영됐어요 · 우리 셋" (뒤는 아래 성장 카드의 그룹) */}
       <p className={styles.doneSub}>
         {list.length > 1 ? `내 그룹 ${list.length}곳에 반영됐어요` : '내 그룹에 반영됐어요'}
-        {main ? ` · ${main.name}` : ''}
+        {main ? ` · ${groupName(main)}` : ''}
       </p>
       <p className={styles.others}>
         {text} {m.size ?? ''}
@@ -117,7 +119,7 @@ export function MissionDonePage() {
           <span className={styles.plus}>{delta > 0 ? `+${formatGrowth(delta)}` : '+1명'}</span>
           <Character stage={(result?.stageAfter ?? stageOf(after)) as CharacterStage} variant={variantOf(main.character.kind)} size={120} mood="happy" bounce />
           <div className={styles.growBar}>
-            <StageBar growth={after} height={10} track="white" label={`${main.name} 캐릭터 성장`} />
+            <StageBar growth={after} height={10} track="white" label={`${groupName(main)} 캐릭터 성장`} />
           </div>
           {grew && result ? (
             <p className={styles.growText}>
@@ -125,14 +127,14 @@ export function MissionDonePage() {
             </p>
           ) : null}
           <p className={styles.growMeta}>
-            {main.name} · {progressLabel({ progress: after })} · 오늘 {result?.total ?? main.today.total}명 중 {result?.completed ?? main.today.completed}명 완료
+            {groupName(main)} · {progressLabel({ progress: after })} · 오늘 {result?.total ?? main.today.total}명 중 {result?.completed ?? main.today.completed}명 완료
           </p>
         </section>
       ) : null}
 
       {list.length > 1 ? (
         <p className={styles.others}>
-          {list.filter((g) => g.groupId !== main?.groupId).map((g) => g.name).join(', ')}에도 함께 반영됐어요
+          {list.filter((g) => g.groupId !== main?.groupId).map((g) => groupName(g)).join(', ')}에도 함께 반영됐어요
           {stageChangedGroups > (grew ? 1 : 0) ? ' · 단계가 바뀐 그룹이 있어요' : ''}
         </p>
       ) : null}

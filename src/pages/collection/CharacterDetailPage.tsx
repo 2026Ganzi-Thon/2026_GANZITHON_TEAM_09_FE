@@ -19,6 +19,7 @@ import { daysBetween } from '../../features/date'
 import { displayStage, progressLabel, stageNameOf, variantOf } from '../../features/selectors'
 import { formatDot } from './format'
 import styles from './collection.module.css'
+import { useGroupName } from '../../features/group/groupName'
 
 /** 매일 모두 하면 다 자라는 날 수 (하루 2 × 50일 = 100) */
 const FULL_DAYS = 50
@@ -29,6 +30,7 @@ const FULL_DAYS = 50
  * [백엔드 연동] 단계별 도달일·날짜별 그래프는 성장 기록 API가 생기면 이 화면에 더한다.
  */
 export function CharacterDetailPage() {
+  const groupName = useGroupName()
   const { groupId, characterId } = useParams()
   const chars = useAllCharacters()
   const gid = Number(groupId)
@@ -67,7 +69,7 @@ export function CharacterDetailPage() {
   return (
     <Page withTabBar gap={14}>
       <PageHeader
-        title={`${group.name} 캐릭터`}
+        title={`${groupName(group)} 캐릭터`}
         back
         backFallback="/collection"
         action={
@@ -83,9 +85,9 @@ export function CharacterDetailPage() {
         {nickname ? <p className={styles.nickname}>{nickname}</p> : null}
         {growing ? (
           <>
-            <Character stage={displayStage(growing)} variant={variant} size={130} mood="happy" title={`${group.name}의 ${stageNameOf(growing)}`} />
+            <Character stage={displayStage(growing)} variant={variant} size={130} mood="happy" title={`${groupName(group)}의 ${stageNameOf(growing)}`} />
             <p className={styles.heroName}>
-              {group.name}의 {stageNameOf(growing)}
+              {groupName(group)}의 {stageNameOf(growing)}
             </p>
             <div className={styles.heroBar}>
               <StageBar growth={growing.progress} height={10} track="white" label="캐릭터 성장" />
@@ -96,8 +98,8 @@ export function CharacterDetailPage() {
           </>
         ) : done ? (
           <>
-            <Character stage={5} variant={variant} size={130} mood="happy" title={`${group.name}의 네잎클로버`} />
-            <p className={styles.heroName}>{group.name}의 네잎클로버 · 다 자랐어요</p>
+            <Character stage={5} variant={variant} size={130} mood="happy" title={`${groupName(group)}의 네잎클로버`} />
+            <p className={styles.heroName}>{groupName(group)}의 네잎클로버 · 다 자랐어요</p>
             <p className={styles.heroMeta}>100 / 100 · 그룹 도감에 담겨 있어요</p>
           </>
         ) : null}
@@ -119,7 +121,7 @@ export function CharacterDetailPage() {
           </p>
         ) : growing ? (
           <p className={styles.record}>
-            지금 <b>{group.name}</b>에서 키우고 있어요. 오늘 {group.today.total}명 중 {group.today.completed}명이 미션을 했어요.
+            지금 <b>{groupName(group)}</b>에서 키우고 있어요. 오늘 {group.today.total}명 중 {group.today.completed}명이 미션을 했어요.
             <br />
             매일 모두 하면 {FULL_DAYS}일이면 다 자라요.
           </p>

@@ -100,7 +100,7 @@ async function fetchGroups() {
       pendingCompletions: {
         ...d.pendingCompletions,
         ...Object.fromEntries(
-          done.map((g) => [g.groupId, { groupName: g.name, kind: g.justCompleted!.kind, completedOn: g.justCompleted!.completedOn, memberCount: g.memberCount }]),
+          done.map((g) => [g.groupId, { groupName: g.name, groupType: g.type, kind: g.justCompleted!.kind, completedOn: g.justCompleted!.completedOn, memberCount: g.memberCount }]),
         ),
       },
     }))

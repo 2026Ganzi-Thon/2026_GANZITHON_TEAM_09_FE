@@ -10,9 +10,11 @@ import { useAllCharacters } from '../../features/character/useCharacters'
 import { displayStage, progressLabel, stageNameOf, variantOf } from '../../features/selectors'
 import { formatDot } from './format'
 import styles from './collection.module.css'
+import { useGroupName } from '../../features/group/groupName'
 
 /** S32 캐릭터 도감 (내 모든 그룹). 내 기록·마이에서 들어온다. 캐릭터를 누르면 성장 과정 */
 export function CollectionPage() {
+  const groupName = useGroupName()
   const chars = useAllCharacters()
   const device = useDevice()
 
@@ -39,8 +41,8 @@ export function CollectionPage() {
             {chars.growing.map((c) => (
               <li key={c.group.groupId}>
                 <Link to={`/collection/${c.group.groupId}/${c.characterId ?? 'current'}`} className={styles.card}>
-                  <Character stage={displayStage(c)} variant={variantOf(c.kind)} size={72} title={`${c.group.name}의 ${stageNameOf(c)}`} />
-                  <span className={styles.name}>{characterNicknameOf(device, c.group.groupId, c.characterId) ?? c.group.name}</span>
+                  <Character stage={displayStage(c)} variant={variantOf(c.kind)} size={72} title={`${groupName(c.group)}의 ${stageNameOf(c)}`} />
+                  <span className={styles.name}>{characterNicknameOf(device, c.group.groupId, c.characterId) ?? groupName(c.group)}</span>
                   <span className={styles.sub}>{progressLabel(c)}</span>
                 </Link>
               </li>
@@ -54,8 +56,8 @@ export function CollectionPage() {
                 {chars.done.map((c) => (
                   <li key={c.characterId}>
                     <Link to={`/collection/${c.group.groupId}/${c.characterId}`} className={styles.card}>
-                      <Character stage={5} variant={variantOf(c.kind)} size={72} title={`${c.group.name}에서 다 키운 네잎클로버`} />
-                      <span className={styles.name}>{characterNicknameOf(device, c.group.groupId, c.characterId) ?? c.group.name}</span>
+                      <Character stage={5} variant={variantOf(c.kind)} size={72} title={`${groupName(c.group)}에서 다 키운 네잎클로버`} />
+                      <span className={styles.name}>{characterNicknameOf(device, c.group.groupId, c.characterId) ?? groupName(c.group)}</span>
                       <span className={styles.sub}>
                         {formatDot(c.completedOn)} · {daysBetween(c.startedOn, c.completedOn) + 1}일
                       </span>

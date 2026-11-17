@@ -3,6 +3,7 @@ import { Character } from '../../components/character/Character'
 import { Page } from '../../components/layout/Page'
 import { Button } from '../../components/ui/Button'
 import { updateDevice, useDevice } from '../../device/store'
+import { useGroupName } from '../../features/group/groupName'
 import { variantOf } from '../../features/selectors'
 import styles from './completed.module.css'
 
@@ -19,8 +20,10 @@ export function CharacterCompletedPage() {
   const groupId = Number(useParams().groupId)
   const navigate = useNavigate()
   const device = useDevice()
+  const groupName = useGroupName()
   const done = device.pendingCompletions[groupId]
   if (!done) return <Navigate to={`/groups/${groupId}`} replace />
+  const name = done.groupType ? groupName({ type: done.groupType, name: done.groupName }) : done.groupName
 
   const seen = (to: string) => {
     updateDevice((d) => {
@@ -34,12 +37,12 @@ export function CharacterCompletedPage() {
   return (
     <Page withTabBar gap={14} className={styles.page}>
       <p className={styles.meta}>
-        {done.groupName} · {formatKoreanDate(done.completedOn)}
+        {name} · {formatKoreanDate(done.completedOn)}
       </p>
       <h1 className={styles.title}>다 자랐어요!</h1>
       <section className={styles.card}>
-        <Character stage={5} variant={variantOf(done.kind)} size={140} mood="happy" bounce title={`${done.groupName}의 네잎클로버`} />
-        <p className={styles.name}>{done.groupName}의 네잎클로버</p>
+        <Character stage={5} variant={variantOf(done.kind)} size={140} mood="happy" bounce title={`${name}의 네잎클로버`} />
+        <p className={styles.name}>{name}의 네잎클로버</p>
         <p className={styles.sub}>100 / 100 · {done.memberCount}명이 함께 키웠어요</p>
       </section>
       <p className={styles.note}>그룹 도감에 담았어요. 캐릭터는 그룹에 남아요.</p>

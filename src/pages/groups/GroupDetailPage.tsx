@@ -16,11 +16,13 @@ import { MemberSheet } from '../../features/group/MemberSheet'
 import { MissionPanel } from '../../features/mission/MissionPanel'
 import { displayStage, groupMetaLabel, progressLabel, stageNameOf, variantOf } from '../../features/selectors'
 import styles from './groups.module.css'
+import { useGroupName } from '../../features/group/groupName'
 
 type Sheet = null | 'menu' | 'leave'
 
 /** S24 그룹 상세 + S21 미션 준비 (Figma 4) */
 export function GroupDetailPage() {
+  const groupName = useGroupName()
   const groupId = Number(useParams().groupId)
   const location = useLocation()
   const navigate = useNavigate()
@@ -59,7 +61,7 @@ export function GroupDetailPage() {
             <button type="button" className={styles.heroBack} onClick={() => navigate('/groups')} aria-label="뒤로">
               ‹
             </button>
-            <h1 className={styles.heroName}>{g.name}</h1>
+            <h1 className={styles.heroName}>{groupName(g)}</h1>
             <span className={styles.heroMeta}>{meta}</span>
           </div>
           <button type="button" className={styles.more} onClick={() => setSheet('menu')} aria-label="그룹 메뉴">
@@ -88,10 +90,10 @@ export function GroupDetailPage() {
           </p>
         ) : null}
         <Link to={`/collection/${g.groupId}/${g.character.characterId ?? 'current'}`} className={styles.heroCharacter} aria-label="성장 과정 보기">
-          <Character stage={displayStage(g.character)} variant={variantOf(g.character.kind)} size={112} title={`${g.name}의 ${stageNameOf(g.character)}`} />
+          <Character stage={displayStage(g.character)} variant={variantOf(g.character.kind)} size={112} title={`${groupName(g)}의 ${stageNameOf(g.character)}`} />
         </Link>
         <p className={styles.charName}>
-          {g.name}의 {stageNameOf(g.character)}
+          {groupName(g)}의 {stageNameOf(g.character)}
         </p>        <StageStepper growth={g.character.progress} />
         <div className={styles.heroBar}>
           <StageBar growth={g.character.progress} height={8} track="white" label="캐릭터 성장" />
@@ -156,7 +158,7 @@ export function GroupDetailPage() {
       </main>
 
       <BottomSheet open={sheet === 'menu'} onClose={() => setSheet(null)} label="그룹 메뉴">
-        <h2 className={styles.sheetTitle}>{g.name}</h2>
+        <h2 className={styles.sheetTitle}>{groupName(g)}</h2>
 
         {g.type === 'FRIEND' ? (
           <ButtonLink to={`/groups/${g.groupId}/invite`} size="md">
@@ -175,10 +177,10 @@ export function GroupDetailPage() {
         </Button>
       </BottomSheet>
 
-      <MemberSheet groupId={g.groupId} groupName={g.name} member={member} onClose={() => setMember(null)} />
+      <MemberSheet groupId={g.groupId} groupName={groupName(g)} member={member} onClose={() => setMember(null)} />
 
       <BottomSheet open={sheet === 'leave'} onClose={() => setSheet(null)} label="그룹 나가기 확인">
-        <h2 className={styles.sheetTitle}>'{g.name}'에서 나갈까요?</h2>
+        <h2 className={styles.sheetTitle}>'{groupName(g)}'에서 나갈까요?</h2>
         <p className={styles.intro}>캐릭터는 그룹에 남아요.</p>
         <Button
           loading={leave.isPending}
