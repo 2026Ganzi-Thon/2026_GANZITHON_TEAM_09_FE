@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { errorMessage } from '../../api/errors'
 import { qk, useCompleteMission } from '../../api/queries'
 import type { GroupsResponse } from '../../api/types'
-import { useToast } from '../../components/ui/Toast'
+import { useToast } from '../../components/ui/useToast'
 import { getDevice, updateDevice } from '../../device/store'
 import { stageOf } from '../character/growth'
 
