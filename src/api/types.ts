@@ -198,9 +198,20 @@ export interface CompleteMissionResponse {
 export interface MissionRecord {
   date: DateString
   category: string
+  /** 고른 쪽 문구. 시작하지 않고 완료한 날은 밖 버전 */
   text: string
-  size: number
+  /** 시작할 때 고른 크기. 시작하지 않고 완료한 날은 null (백엔드 #44) */
+  size: number | null
   sizeType: SizeType
+}
+
+export interface MyRecordsResponse {
+  missions: MissionRecord[]
+  /**
+   * 그 달 내가 핑을 남긴 날짜(KST, 날짜순). 백엔드 회신(2) 1절 #1로 수용됨 — 핑 기능(B #21)이 들어가기 전
+   * 실서버에는 없어서 선택 필드로 둔다. 없으면 화면이 이 기기 기록으로 센다.
+   */
+  pings?: DateString[]
 }
 
 /* ── 핑 ── */

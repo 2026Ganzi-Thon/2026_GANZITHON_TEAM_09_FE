@@ -3,7 +3,7 @@ import { Page, PageHeader, Spacer } from '../../components/layout/Page'
 import { Button } from '../../components/ui/Button'
 import { errorMessage } from '../../api/errors'
 import { useSensitiveConsent } from '../../api/queries'
-import { useToast } from '../../components/ui/Toast'
+import { useToast } from '../../components/ui/useToast'
 import { updateDevice } from '../../device/store'
 import styles from './onboarding.module.css'
 

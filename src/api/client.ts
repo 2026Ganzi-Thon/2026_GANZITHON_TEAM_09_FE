@@ -11,7 +11,7 @@ import type {
   HelpSignals,
   InviteResponse,
   Me,
-  MissionRecord,
+  MyRecordsResponse,
   MissionToday,
   Mood,
   MoodEntry,
@@ -61,7 +61,7 @@ export interface HaengunApi {
   getMissionToday(): Promise<MissionToday>
   startMission(body: StartMissionRequest): Promise<MissionToday>
   completeMission(): Promise<CompleteMissionResponse>
-  getMyRecords(month: string): Promise<{ missions: MissionRecord[] }>
+  getMyRecords(month: string): Promise<MyRecordsResponse>
 
   /* 핑 (PING) */
   sendPing(body: { emoji: PingEmoji }): Promise<{ groupIds: number[] }>

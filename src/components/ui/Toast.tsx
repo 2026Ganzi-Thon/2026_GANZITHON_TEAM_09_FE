@@ -1,7 +1,6 @@
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useRef, useState, type ReactNode } from 'react'
 import styles from './Toast.module.css'
-
-const ToastContext = createContext<(message: string) => void>(() => {})
+import { ToastContext } from './useToast'
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [message, setMessage] = useState<string | null>(null)
@@ -20,5 +19,3 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     </ToastContext.Provider>
   )
 }
-
-export const useToast = () => useContext(ToastContext)
