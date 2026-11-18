@@ -69,6 +69,37 @@ describe('미션 고른 값 (백엔드 회신 2026-11-16)', () => {
   })
 })
 
+describe('백엔드 회신(2) 2026-11-18 — 목업을 실서버와 맞추기', () => {
+  it('MIS05 시작 size는 1~100, 밖이면 400 VALIDATION_FAILED', async () => {
+    expect(await code(api.startMission({ minutes: 10, place: 'OUTDOOR', size: 0 }))).toBe('400 VALIDATION_FAILED')
+    expect(await code(api.startMission({ minutes: 10, place: 'OUTDOOR', size: 101 }))).toBe('400 VALIDATION_FAILED')
+    expect(await code(api.startMission({ minutes: 10, place: 'OUTDOOR', size: 100 }))).toBe('OK')
+  })
+  it('MIS07 시작하지 않고 완료한 날은 내 기록에서 size null, 문구는 밖 버전', async () => {
+    const m = await api.getMissionToday()
+    await api.completeMission()
+    const { missions } = await api.getMyRecords('2026-11')
+    expect(missions).toEqual([{ date: '2026-11-16', category: m.topic.category, text: m.topic.outdoorText, size: null, sizeType: m.topic.sizeType }])
+  })
+  it('시작하고 완료한 날은 고른 크기와 고른 쪽 문구', async () => {
+    const m = await api.getMissionToday()
+    await api.startMission({ minutes: 5, place: 'INDOOR', size: 3 })
+    await api.completeMission()
+    const [r] = (await api.getMyRecords('2026-11')).missions
+    expect([r.text, r.size]).toEqual([m.topic.indoorText, 3])
+  })
+  it('PING 내 기록 pings: 그 달 내가 핑 남긴 날짜, 날짜순, 다른 달은 빠짐', async () => {
+    expect((await api.getMyRecords('2026-11')).pings).toEqual([])
+    await api.completeMission()
+    await api.sendPing({ emoji: 'SUN' })
+    await api.putDemoClock({ now: kstIso('2026-11-17T10:00:00') })
+    await api.completeMission()
+    await api.sendPing({ emoji: 'CLOVER' })
+    expect((await api.getMyRecords('2026-11')).pings).toEqual(['2026-11-16', '2026-11-17'])
+    expect((await api.getMyRecords('2026-10')).pings).toEqual([])
+  })
+})
+
 describe('기분', () => {
   it('ACC05 동의 없이 기분 저장 → 403 CONSENT_REQUIRED', async () => {
     expect(await code(api.putMoodToday({ mood: 'LONELY' }))).toBe('403 CONSENT_REQUIRED')
