@@ -128,7 +128,7 @@ describe('미션·핑', () => {
     await api.createGroup({ type: 'SOLO' })
     const res = await api.completeMission()
     expect(res.groups[0].today).toEqual({ completed: 1, total: 1 })
-    expect(res.groups[0].character.progress).toBe(2)
+    expect(res.groups[0].character?.progress).toBe(2)
     expect(await code(api.completeMission())).toBe('409 ALREADY_COMPLETED')
   })
   it('PING02 미완료 → 409, 하루 두 번 → 409, PING01 정의 밖 값 → 400', async () => {

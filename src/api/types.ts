@@ -191,7 +191,8 @@ export interface CompleteMissionResponse {
   groups: {
     groupId: number
     today: TodayCount
-    character: { stage: number; progress: number; stageChanged: boolean }
+    /** 진행 중 캐릭터가 없는 그룹이면 null (api.md 5절) */
+    character: { stage: number; progress: number; stageChanged: boolean } | null
   }[]
 }
 
