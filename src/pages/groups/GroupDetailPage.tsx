@@ -10,8 +10,9 @@ import { BottomSheet } from '../../components/ui/BottomSheet'
 import { Button, ButtonLink } from '../../components/ui/Button'
 import { LoadError, Loading } from '../../components/ui/Loading'
 import { PingBadge } from '../../components/ui/Ping'
-import { useToast } from '../../components/ui/Toast'
+import { useToast } from '../../components/ui/useToast'
 import { useDevice } from '../../device/store'
+import { characterNicknameOf } from '../../features/character/nickname'
 import { MemberSheet } from '../../features/group/MemberSheet'
 import { MissionPanel } from '../../features/mission/MissionPanel'
 import { displayStage, groupMetaLabel, progressLabel, stageNameOf, variantOf } from '../../features/selectors'
@@ -52,6 +53,9 @@ export function GroupDetailPage() {
 
   const g = group.data
   const meta = groupMetaLabel({ type: g.type, memberCount: g.members.length })
+  const charName = `${groupName(g)}의 ${stageNameOf(g.character)}`
+  // 나만 보는 캐릭터 별명은 1인 그룹 화면에서만 (친구·온라인 그룹 화면에는 그룹 이름 그대로)
+  const soloNickname = g.type === 'SOLO' ? characterNicknameOf(device, g.groupId, g.character.characterId) : undefined
 
   return (
     <>
@@ -90,11 +94,17 @@ export function GroupDetailPage() {
           </p>
         ) : null}
         <Link to={`/collection/${g.groupId}/${g.character.characterId ?? 'current'}`} className={styles.heroCharacter} aria-label="성장 과정 보기">
-          <Character stage={displayStage(g.character)} variant={variantOf(g.character.kind)} size={112} title={`${groupName(g)}의 ${stageNameOf(g.character)}`} />
+          <Character stage={displayStage(g.character)} variant={variantOf(g.character.kind)} size={112} title={soloNickname ?? charName} />
         </Link>
-        <p className={styles.charName}>
-          {groupName(g)}의 {stageNameOf(g.character)}
-        </p>        <StageStepper growth={g.character.progress} />
+        {soloNickname ? (
+          <>
+            <p className={styles.charOriginal}>{charName}</p>
+            <p className={styles.charNickname}>{soloNickname}</p>
+          </>
+        ) : (
+          <p className={styles.charName}>{charName}</p>
+        )}
+        <StageStepper growth={g.character.progress} />
         <div className={styles.heroBar}>
           <StageBar growth={g.character.progress} height={8} track="white" label="캐릭터 성장" />
         </div>

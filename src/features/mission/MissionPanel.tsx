@@ -6,7 +6,7 @@ import { MISSION_MINUTES, type MissionMinutes, type Place } from '../../api/type
 import { Button } from '../../components/ui/Button'
 import { ChoiceGroup } from '../../components/ui/Form'
 import { LoadError, Loading } from '../../components/ui/Loading'
-import { useToast } from '../../components/ui/Toast'
+import { useToast } from '../../components/ui/useToast'
 import { sizeUnit } from '../../data/missions'
 import { moodById } from '../../data/moods'
 import { updateDevice, useDevice } from '../../device/store'

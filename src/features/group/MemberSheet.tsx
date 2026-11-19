@@ -5,7 +5,7 @@ import { REPORT_REASONS, type GroupMember, type ReportReason } from '../../api/t
 import { BottomSheet } from '../../components/ui/BottomSheet'
 import { Button } from '../../components/ui/Button'
 import { HelpCard } from '../../components/ui/HelpCard'
-import { useToast } from '../../components/ui/Toast'
+import { useToast } from '../../components/ui/useToast'
 import { updateDevice, useDevice } from '../../device/store'
 import styles from '../../pages/groups/groups.module.css'
 

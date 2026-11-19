@@ -5,7 +5,7 @@ import { Character } from '../../components/character/Character'
 import { BottomSheet } from '../../components/ui/BottomSheet'
 import { Button } from '../../components/ui/Button'
 import { TextField } from '../../components/ui/Form'
-import { useToast } from '../../components/ui/Toast'
+import { useToast } from '../../components/ui/useToast'
 import { useDevice } from '../../device/store'
 import { CHARACTER_NICKNAME_MAX, characterNicknameOf, setCharacterNickname } from '../../features/character/nickname'
 import { StageGallery } from '../../components/character/StageGallery'
@@ -82,13 +82,12 @@ export function CharacterDetailPage() {
       />
 
       <section className={styles.hero}>
-        {nickname ? <p className={styles.nickname}>{nickname}</p> : null}
+        {/* 별명이 있으면 별명이 큰 이름, 원래 이름(그룹 이름의 단계)은 위쪽 작은 표시로 */}
+        {nickname ? <p className={styles.nickname}>{growing ? `${groupName(group)}의 ${stageNameOf(growing)}` : `${groupName(group)}의 네잎클로버 · 다 자랐어요`}</p> : null}
         {growing ? (
           <>
-            <Character stage={displayStage(growing)} variant={variant} size={130} mood="happy" title={`${groupName(group)}의 ${stageNameOf(growing)}`} />
-            <p className={styles.heroName}>
-              {groupName(group)}의 {stageNameOf(growing)}
-            </p>
+            <Character stage={displayStage(growing)} variant={variant} size={130} mood="happy" title={nickname ?? `${groupName(group)}의 ${stageNameOf(growing)}`} />
+            <p className={styles.heroName}>{nickname ?? `${groupName(group)}의 ${stageNameOf(growing)}`}</p>
             <div className={styles.heroBar}>
               <StageBar growth={growing.progress} height={10} track="white" label="캐릭터 성장" />
             </div>
@@ -98,8 +97,8 @@ export function CharacterDetailPage() {
           </>
         ) : done ? (
           <>
-            <Character stage={5} variant={variant} size={130} mood="happy" title={`${groupName(group)}의 네잎클로버`} />
-            <p className={styles.heroName}>{groupName(group)}의 네잎클로버 · 다 자랐어요</p>
+            <Character stage={5} variant={variant} size={130} mood="happy" title={nickname ?? `${groupName(group)}의 네잎클로버`} />
+            <p className={styles.heroName}>{nickname ?? `${groupName(group)}의 네잎클로버 · 다 자랐어요`}</p>
             <p className={styles.heroMeta}>100 / 100 · 그룹 도감에 담겨 있어요</p>
           </>
         ) : null}

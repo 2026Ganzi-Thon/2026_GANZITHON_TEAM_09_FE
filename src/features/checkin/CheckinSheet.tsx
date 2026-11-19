@@ -5,7 +5,7 @@ import { useDismissCheck, useSubmitCheck } from '../../api/queries'
 import { BottomSheet } from '../../components/ui/BottomSheet'
 import { Button } from '../../components/ui/Button'
 import { ProgressBar } from '../../components/ui/ProgressBar'
-import { useToast } from '../../components/ui/Toast'
+import { useToast } from '../../components/ui/useToast'
 import { CHECKIN_OPTIONS, CHECKIN_QUESTIONS } from '../../data/checkin'
 import styles from './CheckinSheet.module.css'
 

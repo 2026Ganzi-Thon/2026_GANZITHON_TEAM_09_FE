@@ -7,11 +7,13 @@ import { Page, PageHeader } from '../../components/layout/Page'
 import { BottomSheet } from '../../components/ui/BottomSheet'
 import { Button } from '../../components/ui/Button'
 import { Checkbox, TextField } from '../../components/ui/Form'
-import { useToast } from '../../components/ui/Toast'
+import { useToast } from '../../components/ui/useToast'
 import { updateDevice } from '../../device/store'
+import { CHARACTER_NICKNAME_MAX, setCharacterNickname } from '../../features/character/nickname'
+import type { GroupDetail } from '../../api/types'
 import styles from './groups.module.css'
 
-type SheetState = null | 'create' | 'adult' | 'searching'
+type SheetState = null | 'create' | 'solo' | 'adult' | 'searching'
 const MAX_GROUPS = 3
 
 /**
@@ -30,6 +32,8 @@ export function GroupCreatePage({ onboarding }: { onboarding?: boolean }) {
   const [sheet, setSheet] = useState<SheetState>(null)
   const [groupName, setGroupName] = useState(`${me.data?.nickname || '우리'}의 그룹`)
   const [adult, setAdult] = useState(false)
+  /** 나만 보는 캐릭터 별명 (선택). 처음 정하는 곳은 그룹 만들기뿐이고, 이후에는 성장 과정 화면에서 바꾼다 */
+  const [charNickname, setCharNickname] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   const slots = (groups.data?.groups.length ?? 0) + (groups.data?.queue.waiting ? 1 : 0)
@@ -42,16 +46,51 @@ export function GroupCreatePage({ onboarding }: { onboarding?: boolean }) {
 
   const openSheet = (s: SheetState) => {
     setError(null)
+    if (s === 'create' || s === 'solo') setCharNickname('')
     setSheet(s)
   }
+
+  /** 만들기 응답(GET /groups/{id}와 같은 모양)의 characterId로 별명을 이 기기에 저장 */
+  const saveCharNickname = (g: GroupDetail) => {
+    const value = charNickname.trim()
+    if (value && g.character.characterId !== undefined) setCharacterNickname(g.groupId, g.character.characterId, value)
+  }
+
+  const nicknameField = (
+    <TextField
+      label="캐릭터 별명"
+      optional
+      value={charNickname}
+      maxLength={CHARACTER_NICKNAME_MAX}
+      placeholder="나만 보여요"
+      hint="나에게만 보여요. 성장 과정에서 바꿀 수 있어요"
+      suffix={`${charNickname.length} / ${CHARACTER_NICKNAME_MAX}`}
+      onChange={(e) => setCharNickname(e.target.value.slice(0, CHARACTER_NICKNAME_MAX))}
+    />
+  )
 
   const makeFriendGroup = async () => {
     setError(null)
     try {
       const g = await createGroup.mutateAsync({ type: 'FRIEND', name: groupName.trim() })
+      saveCharNickname(g)
       finishOnboarding()
       setSheet(null)
       navigate(`/groups/${g.groupId}/invite`, { replace: true })
+    } catch (e) {
+      setError(errorMessage(e))
+    }
+  }
+
+  const makeSoloGroup = async () => {
+    setError(null)
+    try {
+      const g = await createGroup.mutateAsync({ type: 'SOLO' })
+      saveCharNickname(g)
+      finishOnboarding()
+      setSheet(null)
+      toast('혼자 시작했어요')
+      navigate(onboarding ? '/groups' : `/groups/${g.groupId}`, { replace: true })
     } catch (e) {
       setError(errorMessage(e))
     }
@@ -122,17 +161,7 @@ export function GroupCreatePage({ onboarding }: { onboarding?: boolean }) {
         type="button"
         className={styles.option}
         disabled={full || createGroup.isPending}
-        onClick={async () => {
-          setError(null)
-          try {
-            const g = await createGroup.mutateAsync({ type: 'SOLO' })
-            finishOnboarding()
-            toast('혼자 시작했어요')
-            navigate(onboarding ? '/groups' : `/groups/${g.groupId}`, { replace: true })
-          } catch (e) {
-            setError(errorMessage(e))
-          }
-        }}
+        onClick={() => openSheet('solo')}
       >
         <span className={styles.optionTitle}>혼자 시작하기</span>
         <span className={styles.optionSub}>1인 그룹. 그룹은 모두 3개까지 참여할 수 있어요</span>
@@ -142,8 +171,23 @@ export function GroupCreatePage({ onboarding }: { onboarding?: boolean }) {
       <BottomSheet open={sheet === 'create'} onClose={() => setSheet(null)} label="친구 그룹 만들기">
         <h2 className={styles.sheetTitle}>친구 그룹 만들기</h2>
         <TextField label="그룹 이름" value={groupName} maxLength={12} onChange={(e) => setGroupName(e.target.value)} error={error} hint="1~12자" />
+        {nicknameField}
         <Button loading={createGroup.isPending} disabled={!groupName.trim()} onClick={makeFriendGroup}>
           만들고 초대 코드 받기
+        </Button>
+      </BottomSheet>
+
+      {/* 1인 그룹: 캐릭터 별명(선택)만 받고 시작 */}
+      <BottomSheet open={sheet === 'solo'} onClose={() => setSheet(null)} label="혼자 시작하기">
+        <h2 className={styles.sheetTitle}>혼자 시작하기</h2>
+        {nicknameField}
+        {error ? (
+          <p className={styles.error} role="alert">
+            {error}
+          </p>
+        ) : null}
+        <Button loading={createGroup.isPending} onClick={makeSoloGroup}>
+          시작하기
         </Button>
       </BottomSheet>
 

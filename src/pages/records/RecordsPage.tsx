@@ -42,8 +42,9 @@ export function RecordsPage() {
   const moodOf = (d: string) => moods.data?.moods.find((x) => x.date === d)?.mood
   const missions = records.data?.missions ?? []
   const memoryDays = new Set(memories.map((m) => m.date))
-  // '내가 남긴 핑'은 아직 서버 조회 API가 없어 이 기기에서 보낸 날을 센다 (백엔드 요청 중, #10)
-  const monthPings = device.pingDays.filter((d) => d.startsWith(month)).length
+  // '내가 남긴 핑': 서버가 pings를 주면 그 값, 아직 없으면(실서버 핑 기능 전) 이 기기에서 보낸 날을 센다 (백엔드 회신(2) 1절 #1)
+  const serverPings = records.data?.pings
+  const monthPings = serverPings ? serverPings.length : device.pingDays.filter((d) => d.startsWith(month)).length
   // 내 기록에는 키우는 중인 캐릭터만 (다 키운 캐릭터는 도감 전체 보기에서, #18)
   const growing = groups.data?.groups ?? []
   const canCheckNow = consent && !!check.data?.due
@@ -100,8 +101,8 @@ export function RecordsPage() {
           <span>이번 달 내 미션</span>
         </div>
         <div className={styles.stat}>
-          <strong>{monthPings}번</strong>
-          <span>이번 달 내가 남긴 핑 · 이 기기 기준</span>
+          <strong>{records.isPending ? '–' : `${monthPings}번`}</strong>
+          <span>{serverPings || records.isPending ? '이번 달 내가 남긴 핑' : '이번 달 내가 남긴 핑 · 이 기기 기준'}</span>
         </div>
       </div>
 
@@ -155,8 +156,9 @@ export function RecordsPage() {
             {missions.map((m) => (
               <li key={m.date}>
                 <span className={styles.missionName}>
-                  {m.text} · {m.size}
-                  {recordSizeUnit(m)}
+                  {m.text}
+                  {/* 시작하지 않고 완료한 날은 크기가 없다 (size null) */}
+                  {m.size != null ? ` · ${m.size}${recordSizeUnit(m)}` : null}
                 </span>
                 {/* 사진은 추억 기록에서 본다 — 여기서는 기록이 있다는 표시만 (#9 중복 노출 줄이기) */}
                 {memoryDays.has(m.date) ? (

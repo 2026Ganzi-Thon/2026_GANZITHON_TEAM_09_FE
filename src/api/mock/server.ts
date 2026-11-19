@@ -503,7 +503,7 @@ export const mockApi: HaengunApi = {
   startMission: (b) =>
     handle(() => {
       requireAccount()
-      if (!MISSION_MINUTES.includes(b?.minutes) || !['OUTDOOR', 'INDOOR'].includes(b?.place) || !Number.isInteger(b?.size) || b.size < 1) {
+      if (!MISSION_MINUTES.includes(b?.minutes) || !['OUTDOOR', 'INDOOR'].includes(b?.place) || !Number.isInteger(b?.size) || b.size < 1 || b.size > 100) {
         fail(400, 'VALIDATION_FAILED', '잘못된 값이에요')
       }
       missionToday()
@@ -541,6 +541,7 @@ export const mockApi: HaengunApi = {
     handle(() => {
       requireAccount()
       return {
+        // 시작하지 않고 완료한 날은 size null, 문구는 밖 버전 (백엔드 #44)
         missions: Object.entries(s.missions)
           .filter(([d, m]) => d.startsWith(month) && m.completedAt)
           .sort(([x], [y]) => y.localeCompare(x))
@@ -550,10 +551,14 @@ export const mockApi: HaengunApi = {
               date,
               category: t.category,
               text: m.place === 'INDOOR' ? t.indoorText : t.outdoorText,
-              size: m.size ?? 10,
+              size: m.size ?? null,
               sizeType: t.sizeType,
             }
           }),
+        // 그 달 내가 핑을 남긴 날짜, 날짜순 (백엔드 회신(2) 1절 #1)
+        pings: Object.keys(s.pings)
+          .filter((d) => d.startsWith(month))
+          .sort(),
       }
     }),
 
