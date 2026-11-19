@@ -3,6 +3,7 @@ import { Character } from '../../components/character/Character'
 import { Page } from '../../components/layout/Page'
 import { Button } from '../../components/ui/Button'
 import { updateDevice, useDevice } from '../../device/store'
+import { completionKey, markCompletionSeen } from '../../features/character/completions'
 import { useGroupName } from '../../features/group/groupName'
 import { variantOf } from '../../features/selectors'
 import styles from './completed.module.css'
@@ -29,7 +30,8 @@ export function CharacterCompletedPage() {
     updateDevice((d) => {
       const rest = { ...d.pendingCompletions }
       delete rest[groupId]
-      return { pendingCompletions: rest }
+      // 본 완성은 기억해 둔다: 실서버는 그날 하루 동안 justCompleted를 계속 준다
+      return { pendingCompletions: rest, seenCompletions: markCompletionSeen(d.seenCompletions, completionKey(groupId, done.completedOn)) }
     })
     navigate(to, { replace: true })
   }

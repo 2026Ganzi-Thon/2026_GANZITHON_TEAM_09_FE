@@ -5,7 +5,7 @@ import { qk, useCompleteMission } from '../../api/queries'
 import type { GroupsResponse } from '../../api/types'
 import { useToast } from '../../components/ui/useToast'
 import { getDevice, updateDevice } from '../../device/store'
-import { stageOf } from '../character/growth'
+import { completionGroups } from './completion'
 
 /**
  * '다 했어요' (MIS-07, 정직 기반). 타이머·홈 카드·미션 준비 어디서든 같은 처리:
@@ -26,18 +26,7 @@ export function useFinishMission() {
         lastCompletion: {
           day,
           fromGroupId: fromGroupId ?? getDevice().missionFromGroupId,
-          groups: res.groups.map((g) => {
-            const b = before.find((x) => x.groupId === g.groupId)?.character.progress ?? g.character.progress
-            return {
-              groupId: g.groupId,
-              before: b,
-              after: g.character.progress,
-              stageBefore: stageOf(b),
-              stageAfter: stageOf(g.character.progress),
-              completed: g.today.completed,
-              total: g.today.total,
-            }
-          }),
+          groups: completionGroups(res, before),
         },
       })
       navigate('/mission/done', { replace: true })
