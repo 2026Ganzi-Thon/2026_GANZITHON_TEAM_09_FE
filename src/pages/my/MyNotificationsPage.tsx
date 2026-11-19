@@ -6,7 +6,7 @@ import { Card, Notice, Page, PageHeader } from '../../components/layout/Page'
 import { Button } from '../../components/ui/Button'
 import { SelectField, Toggle } from '../../components/ui/Form'
 import { LoadError, Loading } from '../../components/ui/Loading'
-import { useToast } from '../../components/ui/Toast'
+import { useToast } from '../../components/ui/useToast'
 import { notificationPermission, requestNotificationPermission } from '../../services/notifications'
 
 /** 30분 단위 시각 (NOTI-02) */

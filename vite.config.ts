@@ -31,6 +31,8 @@ export default defineConfig(({ mode }) => {
         icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
       },
       workbox: {
+        // 웹 푸시 받기·알림 누르기 (public/push-sw.js)
+        importScripts: ['push-sw.js'],
         // 도움받기 탭은 오프라인에서도 열려야 하므로 앱 셸 전체를 프리캐시한다.
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
         navigateFallback: '/index.html',

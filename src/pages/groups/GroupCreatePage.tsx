@@ -7,7 +7,7 @@ import { Page, PageHeader } from '../../components/layout/Page'
 import { BottomSheet } from '../../components/ui/BottomSheet'
 import { Button } from '../../components/ui/Button'
 import { Checkbox, TextField } from '../../components/ui/Form'
-import { useToast } from '../../components/ui/Toast'
+import { useToast } from '../../components/ui/useToast'
 import { updateDevice } from '../../device/store'
 import styles from './groups.module.css'
 
