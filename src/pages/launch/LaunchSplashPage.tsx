@@ -30,7 +30,7 @@ export function LaunchSplashPage() {
   return (
     <main className={styles.splash} aria-busy="true">
       <div className={styles.character}>
-        <Character stage={4} size={150} mood="happy" />
+        <Character stage={4} size={150} />
       </div>
       <h1 className={styles.brand}>행운핑</h1>
       <p className={styles.tagline}>함께 하는 작은 활동, 힘든 날엔 도움으로</p>

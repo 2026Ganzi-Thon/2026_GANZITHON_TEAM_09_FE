@@ -23,7 +23,7 @@ export function StartPage() {
   return (
     <main className={styles.start}>
       <div className={styles.hero}>
-        <Character stage={4} size={120} mood="happy" />
+        <Character stage={4} size={120} />
         <h1 className={styles.brand}>행운핑</h1>
         <p className={styles.tagline}>함께 하는 작은 활동으로 일상을 돌보고,
           <br />
