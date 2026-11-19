@@ -26,10 +26,15 @@ export interface DeviceState {
   /** 그룹별 마지막으로 만든 초대 코드 */
   invites: Record<number, { code: string; expiresAt: string }>
   /**
-   * S26 완성 연출 대기열: GET /groups의 justCompleted는 한 번만 오므로 받는 즉시 여기에 남기고,
+   * S26 완성 연출 대기열: GET /groups의 justCompleted를 받는 즉시 여기에 남기고,
    * 사용자가 완성 화면을 보면 지운다.
    */
   pendingCompletions: Record<number, { groupName: string; kind: string; completedOn: string; memberCount: number; /** 1인 그룹이면 닉네임으로 보이게 (예전 기록엔 없음) */ groupType?: GroupType }>
+  /**
+   * 이미 본 완성 연출 (`그룹ID:완성일`, 최근 30개). 실서버는 justCompleted를 그날 하루 동안 계속 주므로
+   * 본 것은 다시 대기열에 넣지 않는다 (features/character/completions.ts)
+   */
+  seenCompletions: string[]
   /**
    * (예전 저장소) 미션 사진. 2026-11-17부터 추억 기록은 IndexedDB(device/memories.ts)에 둔다.
    * 앱을 열 때 남아 있는 값을 옮기고 비운다 — 새로 쓰지 않는다.
@@ -67,6 +72,7 @@ const empty = (): DeviceState => ({
   blockedMemberIds: [],
   invites: {},
   pendingCompletions: {},
+  seenCompletions: [],
   missionPhotos: {},
   characterNicknames: {},
 })
