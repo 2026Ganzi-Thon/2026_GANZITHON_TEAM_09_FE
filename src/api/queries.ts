@@ -1,6 +1,7 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './index'
-import { updateDevice } from '../device/store'
+import { getDevice, updateDevice } from '../device/store'
+import { unseenCompletions } from '../features/character/completions'
 import { isPersistenceFrozen } from '../device/persistence'
 import { syncActiveAccount } from '../device/accounts'
 import { ApiError } from './errors'
@@ -90,11 +91,14 @@ export function clearPersistedCache() {
   }
 }
 
-/** GET /groups. 완성 연출 대상(justCompleted)은 한 번만 오므로 받자마자 기기에 남긴다 (S26) */
+/**
+ * GET /groups. 완성 연출 대상(justCompleted)은 받자마자 기기에 남긴다 (S26).
+ * 실서버는 그날 하루 동안 계속 주므로 이미 본 완성은 다시 넣지 않는다.
+ */
 async function fetchGroups() {
   const res = await api.getGroups()
   writeCache('groups', { ...res, groups: res.groups.map(({ justCompleted: _drop, ...g }) => g) })
-  const done = res.groups.filter((g) => g.justCompleted)
+  const done = unseenCompletions(res.groups, getDevice().seenCompletions)
   if (done.length) {
     updateDevice((d) => ({
       pendingCompletions: {
