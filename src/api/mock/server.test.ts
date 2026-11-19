@@ -100,6 +100,26 @@ describe('백엔드 회신(2) 2026-11-18 — 목업을 실서버와 맞추기', 
   })
 })
 
+describe('api.md 2026-11-19 — 완성 연출은 그날 하루 동안', () => {
+  it('CHR-07 어제 완성된 캐릭터는 오늘 GET /groups마다 justCompleted로 오고, 다음 날엔 빠진다', async () => {
+    const g = await api.createGroup({ type: 'SOLO' })
+    let day = '2026-11-16'
+    let justCompleted: unknown
+    for (let i = 0; i < 80 && !justCompleted; i++) {
+      await api.completeMission()
+      day = new Date(Date.parse(`${day}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10)
+      await api.putDemoClock({ now: kstIso(`${day}T10:00:00`) })
+      justCompleted = (await api.getGroups()).groups.find((x) => x.groupId === g.groupId)?.justCompleted
+    }
+    expect(justCompleted).toMatchObject({ completedOn: new Date(Date.parse(`${day}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10) })
+    // 같은 날 다시 불러도 온다 (한 번만 보여 주기는 화면 몫)
+    expect((await api.getGroups()).groups[0].justCompleted).toEqual(justCompleted)
+    const next = new Date(Date.parse(`${day}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10)
+    await api.putDemoClock({ now: kstIso(`${next}T10:00:00`) })
+    expect((await api.getGroups()).groups[0].justCompleted).toBeUndefined()
+  })
+})
+
 describe('기분', () => {
   it('ACC05 동의 없이 기분 저장 → 403 CONSENT_REQUIRED', async () => {
     expect(await code(api.putMoodToday({ mood: 'LONELY' }))).toBe('403 CONSENT_REQUIRED')

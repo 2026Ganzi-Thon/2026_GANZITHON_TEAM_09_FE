@@ -47,8 +47,11 @@ const fail = (status: number, code: ApiErrorCode, message: string): never => {
 const nowMs = () => Date.now() + s.clockOffsetMs
 const today = () => dayKeyOf(nowMs())
 
+/** 화면에서는 실서버처럼 잠깐 기다린다. 테스트(vitest)에서는 기다리지 않는다 */
+const LATENCY_MS = import.meta.env.MODE === 'test' ? 0 : 60
+
 function delay() {
-  return new Promise((r) => setTimeout(r, 60))
+  return new Promise((r) => setTimeout(r, LATENCY_MS))
 }
 
 /** 요청 하나 = 상태를 읽고 고친 뒤 저장. 응답은 복사본 (화면이 서버 상태를 직접 건드리지 않게) */
@@ -163,7 +166,9 @@ function summaryOf(g: MockGroup): GroupSummary {
     character: characterOf(g),
     isDemo: g.isDemo,
   }
-  if (s.justCompleted[g.groupId]) summary.justCompleted = s.justCompleted[g.groupId]
+  // 실서버처럼 어제 완성된 캐릭터는 오늘 하루 동안 계속 준다 (api.md 3절, 2026-11-19). 한 번만 보여 주기는 화면 몫
+  const jc = s.justCompleted[g.groupId]
+  if (jc && jc.completedOn === addDays(today(), -1)) summary.justCompleted = jc
   return summary
 }
 
@@ -371,7 +376,6 @@ export const mockApi: HaengunApi = {
         matchOnlineGroup()
       }
       const groups = s.groups.map(summaryOf)
-      s.justCompleted = {} // 완성 연출은 한 번만
       return { groups, queue: { waiting: !!s.queue, queuedAt: s.queue ? new Date(s.queue.queuedAt).toISOString() : null } }
     }),
   createGroup: (b) =>
