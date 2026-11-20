@@ -185,6 +185,11 @@ select.input {
   transform: translateX(18px);
 }
 
+.switch:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
 .checkWrap {
   display: flex;
   flex-direction: column;

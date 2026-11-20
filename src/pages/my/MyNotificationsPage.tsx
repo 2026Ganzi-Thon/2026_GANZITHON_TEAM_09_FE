@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { errorMessage } from '../../api/errors'
-import { useNotificationSettings, usePutNotificationSettings } from '../../api/queries'
+import { useMe, useNotificationSettings, usePutNotificationSettings } from '../../api/queries'
 import type { NotificationSettings } from '../../api/types'
 import { Card, Notice, Page, PageHeader } from '../../components/layout/Page'
 import { Button } from '../../components/ui/Button'
@@ -20,6 +20,9 @@ const timeLabel = (t: string) => {
 export function MyNotificationsPage() {
   const toast = useToast()
   const settings = useNotificationSettings()
+  const me = useMe()
+  // 마음 점검은 민감정보 동의가 있어야 할 수 있어서, 동의하지 않았으면 점검 알림 항목을 보이지 않는다 (NOTI-03)
+  const consent = !!me.data?.sensitiveConsent
   const put = usePutNotificationSettings()
   const [permission, setPermission] = useState(notificationPermission())
 
@@ -64,12 +67,14 @@ export function MyNotificationsPage() {
               onChange={(e) => save({ ...settings.data, missionReminderTime: e.target.value || '12:30' })}
             />
           ) : null}
-          <Toggle
-            label="일요일 마음 점검 알림"
-            sub="일요일 저녁 6시"
-            checked={settings.data.weeklyCheckReminder}
-            onChange={(on) => save({ ...settings.data, weeklyCheckReminder: on })}
-          />
+          {consent ? (
+            <Toggle
+              label="일요일 마음 점검 알림"
+              sub="일요일 저녁 6시"
+              checked={settings.data.weeklyCheckReminder}
+              onChange={(on) => save({ ...settings.data, weeklyCheckReminder: on })}
+            />
+          ) : null}
         </Card>
       )}
       <Notice>잠금 화면에 보일 수 있어서 기분·점검 내용은 알림에 넣지 않아요. 예: "오늘의 미션이 기다리고 있어요"</Notice>

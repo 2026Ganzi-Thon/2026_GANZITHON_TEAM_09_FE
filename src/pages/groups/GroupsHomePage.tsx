@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
-import { useDismissHelpCard, useGroups, useHelpCard, useLeaveOnlineQueue, useMe, useMissionToday } from '../../api/queries'
+import { useDismissHelpCard, useGroups, useHelpCard, useLeaveOnlineQueue, useMe, useMissionToday, useMoods } from '../../api/queries'
 import { Character } from '../../components/character/Character'
 import { GroupCard } from '../../components/group/GroupCard'
 import { EmptyState, Page, PageHeader } from '../../components/layout/Page'
@@ -125,8 +125,15 @@ const pad = (n: number) => String(n).padStart(2, '0')
 /** 홈의 오늘 미션 카드. 진행 중이면 지난 시간과 '다 했어요'를 바로 보여준다 (S20 · MIS-07) */
 function HomeMissionCard({ mission: m, groupCount }: { mission: MissionToday; groupCount: number }) {
   const device = useDevice()
+  const me = useMe()
   const online = useOnline()
   const { finish, isPending } = useFinishMission()
+  // 미션 카드는 기분 팝업을 닫은 뒤에야 보이므로 '기분을 고른 뒤 정해져요'는 맞지 않는다.
+  // 동의하고 오늘 기분을 남긴 사람에게만 기분에 맞춘 추천이라고 알려 준다 (MIS-02)
+  const consent = !!me.data?.sensitiveConsent
+  const moods = useMoods(m.date, m.date, consent)
+  const moodToday = consent && !!moods.data?.moods.some((x) => x.date === m.date)
+  const sub = m.status === 'COMPLETED' ? '오늘은 이 정도면 충분해요' : moodToday ? '오늘 기분에 맞춰 크기를 추천했어요 · 바꿀 수 있어요' : '크기와 밖/안은 내가 골라요'
   const started = m.status === 'STARTED'
   const now = useNow(started ? 1000 : 60_000)
   const title = (m.place ?? m.defaults.place) === 'INDOOR' ? m.topic.indoorText : m.topic.outdoorText
@@ -158,7 +165,7 @@ function HomeMissionCard({ mission: m, groupCount }: { mission: MissionToday; gr
       <span className={styles.missionText}>
         <span className={styles.eyebrow}>{eyebrow}</span>
         <span className={styles.missionTitle}>{title}</span>
-        <span className={styles.missionSub}>{m.status === 'COMPLETED' ? '오늘은 이 정도면 충분해요' : '기분을 고른 뒤 정해져요 · 크기와 밖/안은 내가 골라요'}</span>
+        <span className={styles.missionSub}>{sub}</span>
       </span>
       <span className={styles.missionCta}>{m.status === 'COMPLETED' ? '완료' : '시작'}</span>
     </Link>

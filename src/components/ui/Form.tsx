@@ -113,7 +113,19 @@ export function ChoiceGroup<T extends string | number>({ label, value, options, 
   )
 }
 
-export function Toggle({ label, sub, checked, onChange }: { label: string; sub?: string; checked: boolean; onChange: (v: boolean) => void }) {
+export function Toggle({
+  label,
+  sub,
+  checked,
+  disabled,
+  onChange,
+}: {
+  label: string
+  sub?: string
+  checked: boolean
+  disabled?: boolean
+  onChange: (v: boolean) => void
+}) {
   const id = useId()
   return (
     <label htmlFor={id} className={styles.toggleRow}>
@@ -121,7 +133,7 @@ export function Toggle({ label, sub, checked, onChange }: { label: string; sub?:
         <span className={styles.toggleLabel}>{label}</span>
         {sub ? <span className={styles.hint}>{sub}</span> : null}
       </span>
-      <input id={id} type="checkbox" role="switch" className={styles.switch} checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <input id={id} type="checkbox" role="switch" className={styles.switch} checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
     </label>
   )
 }
