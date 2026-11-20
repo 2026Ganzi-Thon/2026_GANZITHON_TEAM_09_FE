@@ -15,6 +15,13 @@ import styles from './groups.module.css'
 
 type SheetState = null | 'create' | 'solo' | 'adult' | 'searching'
 const MAX_GROUPS = 3
+const GROUP_NAME_MAX = 12
+
+/** 기본 그룹 이름. '닉네임의 그룹'이 12자를 넘으면(닉네임 9자 이상) 서버가 400을 주므로 '우리 그룹'으로 대신한다 */
+function defaultGroupName(nickname: string | undefined): string {
+  const name = `${nickname || '우리'}의 그룹`
+  return name.length <= GROUP_NAME_MAX ? name : '우리 그룹'
+}
 
 /**
  * S08 첫 그룹 고르기 / S28 그룹 추가 (Figma 3): 친구(초대 코드) / 온라인(자동 배정 익명) / 혼자.
@@ -30,7 +37,7 @@ export function GroupCreatePage({ onboarding }: { onboarding?: boolean }) {
   const confirmAdult = useAdultConfirmation()
 
   const [sheet, setSheet] = useState<SheetState>(null)
-  const [groupName, setGroupName] = useState(`${me.data?.nickname || '우리'}의 그룹`)
+  const [groupName, setGroupName] = useState(() => defaultGroupName(me.data?.nickname))
   const [adult, setAdult] = useState(false)
   /** 나만 보는 캐릭터 별명 (선택). 처음 정하는 곳은 그룹 만들기뿐이고, 이후에는 성장 과정 화면에서 바꾼다 */
   const [charNickname, setCharNickname] = useState('')
@@ -170,7 +177,7 @@ export function GroupCreatePage({ onboarding }: { onboarding?: boolean }) {
       {/* 친구 그룹 이름 → 만들면 S09 초대 화면 */}
       <BottomSheet open={sheet === 'create'} onClose={() => setSheet(null)} label="친구 그룹 만들기">
         <h2 className={styles.sheetTitle}>친구 그룹 만들기</h2>
-        <TextField label="그룹 이름" value={groupName} maxLength={12} onChange={(e) => setGroupName(e.target.value)} error={error} hint="1~12자" />
+        <TextField label="그룹 이름" value={groupName} maxLength={GROUP_NAME_MAX} onChange={(e) => setGroupName(e.target.value)} error={error} hint="1~12자" />
         {nicknameField}
         <Button loading={createGroup.isPending} disabled={!groupName.trim()} onClick={makeFriendGroup}>
           만들고 초대 코드 받기

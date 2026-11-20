@@ -59,6 +59,8 @@ export function MyPrivacyPage() {
           label="기분·마음 점검 기록 동의"
           sub="끄면 이후 기분·점검을 기록하지 않아요. 지난 기록은 남아요"
           checked={consent}
+          // 저장하고 새 값을 받아 올 때까지는 다시 누를 수 없게 한다 (빠르게 두 번 누르면 화면과 서버가 어긋날 수 있음)
+          disabled={setConsent.isPending || me.isFetching}
           onChange={(v) =>
             setConsent.mutate(v, {
               onSuccess: () => toast(v ? '동의했어요. 기분을 물어볼게요' : '이후 기분·점검을 기록하지 않아요'),

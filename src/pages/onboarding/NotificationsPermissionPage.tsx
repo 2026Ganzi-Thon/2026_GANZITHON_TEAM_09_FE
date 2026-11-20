@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useMe } from '../../api/queries'
 import { Page, PageHeader } from '../../components/layout/Page'
 import { Button } from '../../components/ui/Button'
 import { updateDevice } from '../../device/store'
@@ -11,6 +12,8 @@ export function NotificationsPermissionPage() {
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState<string | null>(null)
+  // 바로 앞 단계에서 민감정보 동의를 하지 않았으면 마음 점검 알림은 안내하지 않는다 (NOTI-03)
+  const consent = !!useMe().data?.sensitiveConsent
 
   const next = () => {
     updateDevice({ onboardingStep: 'group' })
@@ -38,10 +41,12 @@ export function NotificationsPermissionPage() {
           <b>미션 알림</b>
           내가 정한 시각에, 아직 미션을 안 한 날만
         </li>
-        <li className={styles.notiItem}>
-          <b>마음 점검 알림</b>
-          일요일 저녁 6시, 한 주에 한 번
-        </li>
+        {consent ? (
+          <li className={styles.notiItem}>
+            <b>마음 점검 알림</b>
+            일요일 저녁 6시, 한 주에 한 번
+          </li>
+        ) : null}
         <li className={styles.notiItem}>
           <b>핑은 알림으로 오지 않아요</b>
           그룹 화면에서만 볼 수 있어요

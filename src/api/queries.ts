@@ -250,7 +250,11 @@ export function useStartMission() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (b: StartMissionRequest) => api.startMission(b),
-    onSuccess: (data) => qc.setQueryData(qk.mission, data),
+    onSuccess: (data) => {
+      qc.setQueryData(qk.mission, data)
+      // 기기 캐시도 '진행 중'으로 바꿔 둔다. 안 그러면 새로고침 때 '시작 전' 캐시를 먼저 보고 타이머에서 튕긴다
+      writeCache('mission', data)
+    },
   })
 }
 

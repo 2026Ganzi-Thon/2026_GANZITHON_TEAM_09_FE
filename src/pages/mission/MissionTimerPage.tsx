@@ -35,6 +35,8 @@ export function MissionTimerPage() {
   if (mission.isPending) return <Loading />
   const m = mission.data
   if (!m || finishing) return <Loading />
+  // 기기 캐시로 먼저 그린 값이 '진행 중'이 아니면, 서버에서 새로 받을 때까지 기다린 뒤 이동한다
+  if (m.status !== 'STARTED' && mission.isFetching) return <Loading />
   if (m.status === 'COMPLETED') return <Navigate to="/mission/done" replace />
   if (m.status !== 'STARTED') return <Navigate to="/mission" replace />
 
